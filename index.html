@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Using Differential Equations to Model Disease Dynamics</title>
+
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">My Website</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="sirintro.html">Introduction to the SIR Model</a>
+</li>
+<li>
+  <a href="basicmodel.html">Advanced SIR Model</a>
+</li>
+<li>
+  <a href="advanced.html">Advanced SIR Model with Reinfection</a>
+</li>
+<li>
+  <a href="enddiscussion.html">Discussion</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Using Differential Equations to Model
+Disease Dynamics</h1>
+
+</div>
+
+
+<p><br></p>
+<div class="warning"
+style="background-color:#E9D8FD; color: #69337A; border-left: solid #805AD5 4px; border-radius: 4px; padding:0.7em;">
+<span>
+<p style="margin-top:1em; text-align:center">
+</p>
+<p style="margin-left:1em;">
+In this website, we will be exploring the applications of differential
+equations to disease modeling. Alongside a basic knowledge of calculus,
+this website should be helpful in teaching how to create and evaluate an
+original SIR model. This website starts with basic information of what
+differential equations are, and it moves to discuss the SIR model and
+its specific applications. Code and graphical representation are used
+heavily to visualize and interpret the data effectively and efficiently.
+</p>
+<p style="margin-bottom:1em; margin-right:1em; text-align:right; font-family:Georgia">
+<b></i>
+</p>
+<p></span></p>
+</div>
+<p><br></p>
+<div id="section" class="section level1 tabset">
+<h1 class="tabset"></h1>
+<div id="differential-equations" class="section level2">
+<h2>Differential Equations</h2>
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p><br></p>
+<p>The type of model that we use to predict the progression of various
+diseases uses systems of differential equations. Differential equations
+are equations that involve a derivative, and systems are multiple
+differential equations comprising one larger model.</p>
+<p>The basis of differential equations is that they show how a given
+function or functions change over time, but sometimes they can be rather
+difficult to solve. However, there is three main ways to solve
+differential equations: numerically, analytically, and quantitatively.
+In the rest of this research, we rely heavily on numerical methods, but
+quantitative and analytical methods can also be used.</p>
+<p>Additionally, equilibrium analysis is an important concept within the
+modeling of diseases. In equilibrium analysis, we evalute the long term
+behavior of a system, often using graphical representations. We seek to
+find the equilibrium point of a system. The equilibrium point is the
+point when you start at it, you will never move from it.</p>
+</div>
+<div id="the-numerical-method" class="section level3">
+<h3>The Numerical Method</h3>
+<p><br></p>
+<p>The numerical method is great for solving very complex systems of
+differential equations if a computer is able to be used, otherwise, the
+process can be a bit tedious.</p>
+<p>To udnerstand how the numerical method works, first look at euler’s
+method of aproximation. This method takes into account the basic ideas
+of calculcus. If given a system of differential equations <span
+class="math inline">\(\frac{dx}{dt}=f(t,y,x), \frac{dy}{dt} =
+g(t,y,x)\)</span> and the intital value <span
+class="math inline">\(x(0)=a\)</span> and <span
+class="math inline">\(y(0)=b\)</span> we can use the form <span
+class="math inline">\(y_{k+1}=y_{k}+\delta tf(t,y,x),
+x_{k+1}=x_{k}+\delta tf(t_{k},y_{k},x_{k})\)</span> where <span
+class="math inline">\(\delta t\)</span> is the timesteps. In essense
+this method uses the changin rate at a point <span
+class="math inline">\(y_{k}\)</span> and uses it to predict the value of
+<span class="math inline">\(y_{k+1}\)</span>.</p>
+<p>Using this, an approximation can be made on the values of x and y at
+various timesteps. However, this method can be improved by taking very
+small timesteps and allowing a computer to calculate with more
+precision. In this case, an ordinary differential equations (ode) solver
+can be used. The following systems of differential equations will be
+used as an example.</p>
+<p><span class="math display">\[\frac{dx}{dt}= \frac{1}{5}x + 3xy\\
+\frac{dy}{dt} = 4y - 2xy\]</span></p>
+<p>With the initial condition of <span
+class="math inline">\(x(0)=1\)</span> and <span
+class="math inline">\(y(0) = 2\)</span>.</p>
+<p>An ordinary differential equations (ode) solver can be used to
+compute the solutions to this system numerically with much greater
+accuracy.</p>
+<p>First the system must be defined within the R programs model.system,
+and the initial conditions will be specified. The packages used are also
+called at the beginning of the code.</p>
+<pre class="r"><code>model.system &lt;- function(time,state,parms){
+  with(as.list(c(state,parms)),{
+    dx = 1 / 5 * x + 3 * x * y
+    dy = 4 * y -  2 * x * y
+    return(list(c(dx, dy)))
+  }
+  )
+}
+
+initial.conditions &lt;- c(x = 1, y = 2)</code></pre>
+<p>Now, the simulation specific aspects of the code need to be added.
+This icludes the size of the timesteps, the amount of timesteps, and the
+function that is used to compute the solutions to the system.</p>
+<pre class="r"><code>dt &lt;- 0.1 
+timesteps &lt;- seq(0, 1, by = dt)
+
+simulation &lt;- as.data.frame(ode(y=initial.conditions, func = model.system,       
+                                parms=model.parameters, times=timesteps))</code></pre>
+<p>By using small timesteps, the accuracy of the numerical aproximations
+greatly increases. Now, the data needs to be visualized. A graph can be
+used, or the data can be printed our in an array of data. For simplicity
+and ease of understanding, a data plot will be used to visualize the
+data.</p>
+<pre class="r"><code>plotS &lt;- ggplot() +
+  geom_line(simulation,mapping=aes(x=time, y=x, color = &#39;x&#39;)) +    
+  geom_line(simulation,mapping=aes(x=time, y=y, color = &#39;y&#39;)) + 
+  labs(x=&quot;Timesteps&quot;, y=&quot;values&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0)) + 
+  theme_bw() +
+  ggtitle(&quot;System 1&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotS</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>From this tye of anaylsis, we can gain a lot of useful data. We can
+see that as time goes on, y approaches zero. This is useful information
+because a lot of times it is important to know the long term behaviro of
+a system.</p>
+</div>
+<div id="analytical-solutions" class="section level3">
+<h3>Analytical Solutions</h3>
+<p><br></p>
+<p>Another way of determining the solutions of systems of differential
+equation is by using different methods to solve the analytically. This
+method, if done correctly, is very accurate and can give an explicit
+function for <span class="math inline">\(y(t)\)</span>, but it is
+sometimes not possible or incredibly difficult to do. There are
+countless ways to analytically solve a system of differntial
+equations.</p>
+</div>
+<div id="qualitative-solutions" class="section level3">
+<h3>Qualitative Solutions</h3>
+<p><br></p>
+<p>Qualitative solutions are found by examining the predicted behavior
+of the system. With qualitative analysis, phase lines and slope fields
+are used to predict the behavior of systems at or around equilibrium
+points. This method is vital in understanding the bigger picture of what
+is going on with the system as a whole, and allows visualization of the
+system without tedious calcuation.</p>
+<hr />
+<p style="text-align: center;">
+A work by <a href="https://en.wikipedia.org/wiki/Mathematics">Brennan
+Holst</a>
+</p>
+<p style="text-align: center;">
+<span style="color: #808080;"><em><a
+href="mailto:brennanholst@gmail.com"
+class="email">brennanholst@gmail.com</a></em></span>
+</p>
+</div>
+</div>
+<div id="history" class="section level2">
+<h2>History</h2>
+<p>As a society, we take initiative to innovate in order to explain what
+was once explainable. This applied to the idea of predicting how
+diseases were going to spread. In order to properly manage disease it is
+vital to predict where and how the disease is going to progress. If it
+is known how the disease will spread, governments, hospitals, and
+citizens are able to properly allocate materials, treatments, and
+manpower, and are able to take initiative to prevent the spread of
+various disease. So, finding an accurate way to represent disease as at
+teh forefront of many early epidemiologists’ minds.</p>
+<p>The first scientist to study the spread of diseases was <a
+href="https://en.wikipedia.org/wiki/John_Graunt">John Graunt</a> in the
+17th century. In his methods, he would rely solely on the weekly death
+counts to measure how many people were dying. Graunt created documents
+called The Bills of Mortality where he presented data on the births and
+deaths and likely causes of death in local areas in London. He would
+often rely heavily on estimate and educated guesses to predict how the
+disease would spread next within the city of London. His methods and
+data were often considered to be flawed due to the inaccuracies in
+determining causes of death during his time. However, he set the
+groundwork for later, more accurate models.</p>
+<div class="figure" style="text-align: center">
+<img src="440px-JohnGraunt.png" alt="https://www.wikidata.org/wiki/Q454938" width="30%" />
+<p class="caption">
+<a href="https://www.wikidata.org/wiki/Q454938"
+class="uri">https://www.wikidata.org/wiki/Q454938</a>
+</p>
+</div>
+<p>After Graunt, epidemiologists began to take a more meticulous,
+mathematical approach to modeling diseases. <a
+href="https://en.wikipedia.org/wiki/Daniel_Bernoulli">Daniel
+Bernoulli</a> was seen as the first person to take a mathematical
+approach to modeling diseases. Bernoulli was a trained physician who
+used mathematics to “defend the practice of inoculating against
+smallpox.” His data showed that by inoculating people against smallpox,
+their life expectancy could increase from around 26 years to around 29
+years old.</p>
+<div class="figure" style="text-align: center">
+<img src="bernoulli.jpg" alt="https://en.wikipedia.org/wiki/Daniel_Bernoulli" width="30%" />
+<p class="caption">
+<a href="https://en.wikipedia.org/wiki/Daniel_Bernoulli"
+class="uri">https://en.wikipedia.org/wiki/Daniel_Bernoulli</a>
+</p>
+</div>
+<p>Nowadays, <a
+href="https://en.wikipedia.org/wiki/Mathematical_modelling_of_infectious_disease">mathematical
+models</a> are used to model two different classes of diseases:
+communicable and progressive. Given recent headlines surrounding
+COVID-19, the use of various methods of modeling communicable diseases
+were used. A lot of them were based heavily in mathematics. One
+particular use, called the SIR model, is what we will explore further in
+the rest of this page. In real life, these models were used very heavily
+during the COVID pandemic. The predictions made at the beginning of the
+pandemic that estimated the death toll of the pandemic were calculated
+mathematically in some way or another. During this pandemic, math was
+used to predict the number of infected individuals, seriously ill
+individuals, symptomatic individuals, asymptomatic individuals, deaths,
+hospitalization,and infection rates in different age groups. Even now,
+as the COVID virus is much more manageable, these mathematical models
+are still being used to predict outcomes. For example, the next figure
+shows the project hospitalizations of COVID-19.</p>
+<div class="figure" style="text-align: center">
+<img src="COVID.jpg" alt="https://www.cdc.gov/coronavirus/2019-ncov/science/forecasting/hospitalizations-forecasts.html" width="30%" />
+<p class="caption">
+<a
+href="https://www.cdc.gov/coronavirus/2019-ncov/science/forecasting/hospitalizations-forecasts.html"
+class="uri">https://www.cdc.gov/coronavirus/2019-ncov/science/forecasting/hospitalizations-forecasts.html</a>
+</p>
+</div>
+<p>These types of data representations are incredibly inportant in the
+field of epidemiology. By using these matheamtical models, experts are
+able to assess and manage situations in an efficient way because they
+have enough information to do so. Once again, in the COVID-19 pandemic,
+experts were able to implement macking, social distancing, and
+vaccination requirement, because there models told them that the
+pandemic could get significantly worse without them. This is largely
+where the term “flattening the curve” came from. Since experts are able
+to see a predicted graph of the disease progression, they are able to
+implement stratgies to lessen the sudden impacts of disease and
+infection.</p>
+<p>In terms of modeling progressive disease, mathematics is used to
+predict individual patient outcomes with diseases like ALS or
+Alzheimers. With a mathematical model, a system of equations can be
+derived to represtent the “extracellular plaques consisting of amyloid
+β-peptides and intracellular neurofibrillary tangles of
+hyperphosphorylated tau proteins” that contribute to the onset and
+progression of alzheimers disease. By using past trends of the disease,
+future outcomes can be predicted by using this model. This is extremely
+beneficial from a pateint care persepctive, because doctors, and
+families, are able to better understand howa nd when this disease will
+likely affect their patients or family members.</p>
+<p>However, mathematical models for diseases are not always perfect
+representations of disease dynamics. These model find difficulty in the
+fact that they can be oversimplified representations or they are
+improper representations. The flaw in the oversimplified representation
+is that they are unable to account for all factors in nature that would
+be present in a normal disease, so they will never be able to model
+completely effectively. Additionally, in this case, the changing nature
+of disease makes it difficult to model without adjustment to the
+parameters. Because disease are constantly evolving, mathematical models
+can often only be used accurately for a short period of time. Also, if
+the model are improper representations, they do not remain true in real
+life. What this means is that the math representation either does not
+make sense in real life or does not accurately represent what is
+happening in real life. This can also be the result of an
+oversimplification, but it can also be due to improper assumptions and
+lack of knowledge in the model.</p>
+<hr />
+<p style="text-align: center;">
+A work by <a href="https://en.wikipedia.org/wiki/Mathematics">Brennan
+Holst</a>
+</p>
+<p style="text-align: center;">
+<span style="color: #808080;"><em><a
+href="mailto:brennanholst@gmail.com"
+class="email">brennanholst@gmail.com</a></em></span>
+</p>
+</div>
+<div id="about-the-author" class="section level2">
+<h2>About the Author</h2>
+<div class="figure" style="text-align: center">
+<img src="bernoulli.jpg" alt="https://en.wikipedia.org/wiki/Daniel_Bernoulli" width="30%" />
+<p class="caption">
+<a href="https://en.wikipedia.org/wiki/Daniel_Bernoulli"
+class="uri">https://en.wikipedia.org/wiki/Daniel_Bernoulli</a>
+</p>
+</div>
+<p>My name is Brennan Holst. I am a senior at West Salem High School in
+West Salem, Wisconsin. I am creating this website so that other people
+interested in research and in differential equations can learn more
+about what I did. I have been completing research alongside Dr. Robert
+Allen of the University of Wisconsin La Crosse on the application of
+differential equations and the SIR model on predicting the progression
+of disease relating to sociological factors This website is a display of
+that research. In the future, I will be attending Northwestern
+University in hopes of studying biomedical engineering and mathematics.
+I hope to continue researching diseases and other topics within the real
+of medicine.</p>
+<hr />
+<p style="text-align: center;">
+A work by <a href="https://en.wikipedia.org/wiki/Mathematics">Brennan
+Holst</a>
+</p>
+<p style="text-align: center;">
+<span style="color: #808080;"><em><a
+href="mailto:brennanholst@gmail.com"
+class="email">brennanholst@gmail.com</a></em></span>
+</p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
