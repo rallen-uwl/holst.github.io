@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Advanced SIR Model</title>
+
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<script src="site_libs/navigation-1.1/sourceembed.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<style type="text/css">
+#rmd-source-code {
+  display: none;
+}
+</style>
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">My Website</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="sirintro.html">Introduction to the SIR Model</a>
+</li>
+<li>
+  <a href="basicmodel.html">Advanced SIR Model</a>
+</li>
+<li>
+  <a href="advanced.html">Advanced SIR Model with Reinfection</a>
+</li>
+<li>
+  <a href="enddiscussion.html">Discussion</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+<li role="separator" class="divider"></li>
+<li><a id="rmd-download-source" href="#">Download Rmd</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Advanced SIR Model</h1>
+
+</div>
+
+
+<div id="motivation" class="section level2">
+<h2>Motivation</h2>
+<p>Since the creation of the basic SIR model for diseases, there have
+numerous additional, more advanced SIR models. This specific <a
+href="https://ir.library.illinoisstate.edu/spora/vol8/iss1/6/">model</a>
+by Dr. Robert Allen, Dr. Katherine Heller and Dr. Matthew Pons is the
+basis of the reinfection model discussed later. In this model, the basic
+SIR model has additional sociological parameters added. In this case,
+they added two different subpopulations that do not different in any way
+biologically, they only differ in behavior. This behavior is what
+determines how succeptible to illness they are. So, for example, one
+subpopulation may social distance, wear masks, or wash their hands more
+often that the other subpopulation.</p>
+<p>It is important to first make assumptions on the model so that we can
+represent the progression of the disease in the correct manner. For one,
+we assume that there are two separate susceptible populations <span
+class="math inline">\(S_1\)</span> and <span
+class="math inline">\(S_2\)</span>. The <span
+class="math inline">\(S_1\)</span> population is more likely to catch
+the disease, therefore its infection rate, <span
+class="math inline">\(\beta_1\)</span> is always greater than the
+infection rate for <span class="math inline">\(S_2\)</span> population,
+<span class="math inline">\(\beta_2\)</span>. There is also movement
+between the subpopulations determined by constants <span
+class="math inline">\(\alpha_1\)</span> and <span
+class="math inline">\(\alpha_2\)</span>. These constants represent
+peoples changes in behavior. In other words, if someone was to decide to
+become more or less cautious, therefore lowering or raising their risk,
+they will switch from one subpopulation to another. This rate of change
+from one subpopulation to another is expressed in the <span
+class="math inline">\(\alpha\)</span> term.</p>
+<p>Additionally, there is more subpopulations in the infectious portion
+of the new SIR model as compared to the original. This case accounts for
+both people who are infected and symptomatic, <span
+class="math inline">\(I_s\)</span> and two subpopulations of
+asymptomatic people <span class="math inline">\(A_1\)</span> and <span
+class="math inline">\(A_2\)</span>. These populations added together are
+equivalent to the total infected population, <span
+class="math inline">\(I\)</span>. The infected populations are split by
+the constant <span class="math inline">\(\lambda\)</span>, where <span
+class="math inline">\(\lambda\)</span> proportion of people go into the
+infected and symptomatic portion of the model and <span
+class="math inline">\(1 - \lambda\)</span> proportion of people go into
+the asymptomatic pool of people when infected. Additionally, people who
+are asymptomatic can become symptomatic. They do this at the rate of
+<span class="math inline">\(\gamma\)</span>. However people who are
+symptomatic cannot become asymptomatic without recovering. There is also
+movement between the <span class="math inline">\(A_1\)</span> and <span
+class="math inline">\(A_2\)</span> populations denoted by <span
+class="math inline">\(\alpha_1\)</span> and <span
+class="math inline">\(\alpha_2\)</span> paramters. Whether a person is
+asymptomatic or symptomatic has no effect on how infectious they are
+towards other people. Finally, there is a single recovered population,
+R, which is where all people who have caught the disease, and recovered
+from enter. People can enter the recovered population either from the
+asymptomatic or the symptomatic pool of infected people. People who are
+asymptomatic can become symptomatic, then recover, or just simply
+recover. Once a person becomes infected and symptomatic, the only thing
+they can do is move to the recovered population. The rate at which
+people recover from either population is expressed as the constant <span
+class="math inline">\(\kappa\)</span>, and is dependent on the number of
+people in the infected population, but both asymptomatic and symptomatic
+people recover at the same rate.</p>
+</div>
+<div id="creating-the-model" class="section level2">
+<h2>Creating the Model</h2>
+<p>While all of these assumptions may seem tedious, they are incredibly
+important in creating a model that accurately represents what you want.
+Now, we generate a picture or representation of the model that will able
+to help us create a system of differential equations. In this model,
+each individual population is a box, and, based on our assumptions,
+arrows move between each population to represent the changes in each. We
+then are able to use constants and the population values to label the
+arrows with representative equations. Based on this information, the
+following model can be created.</p>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-1-1.png" width="90%" /></p>
+</div>
+<div id="evaluation" class="section level2">
+<h2>Evaluation</h2>
+<p>In order to evaluate this model, we will primarily look towards
+determining equilibrium points numerically. This means evaluating what
+happens to each of the populations over time by using a computer program
+to generate graphs over long periods of time. There are also ways to
+evaluate this system analytically. For further information on how to
+interpret this system analytically visit the <a
+href="https://ir.library.illinoisstate.edu/spora/vol8/iss1/6/">original
+paper</a></p>
+</div>
+<div id="graphing" class="section level2">
+<h2>Graphing</h2>
+<p>One of the best ways to view the long term and short term behavior of
+the system is by numerically solving the system with a computer program.
+The following code details how to take the differential equation above
+and solve it using a computer program.</p>
+<div id="basic-graph" class="section level3">
+<h3>Basic Graph</h3>
+<p>This is a graph that includes all populations in the model with no
+changes in parameters. This provides a baseline on what the model looks
+like with no changes to parameters or initial conditions.</p>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differntial equation solver to solve this system. 
+simulation &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters, times=timesteps)) 
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotSIR &lt;- ggplot() +
+  geom_line(simulation,mapping=aes(x=time, y=S1, color = &#39;S1&#39;)) +    
+  geom_line(simulation,mapping=aes(x=time, y=S2, color = &#39;S2&#39;)) +    
+    geom_line(simulation,mapping=aes(x=time, y=Is, color = &#39;Is&#39;)) + 
+    geom_line(simulation,mapping=aes(x=time, y=A1, color = &#39;A1&#39;)) + 
+    geom_line(simulation,mapping=aes(x=time, y=A2, color = &#39;A2&#39;)) + 
+    geom_line(simulation,mapping=aes(x=time, y=R, color = &#39;R&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotSIR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="changing-initial-conditions" class="section level3">
+<h3>Changing Initial Conditions</h3>
+<p>By varying the initial conditions and keeping all other parameters
+constant, we are able to see the direct effect that the initial
+conditions have on both the short term and long term behavior of the
+system.</p>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions1 &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+initial.conditions2 &lt;- c(S1 = p*(N-5), S2 = (1-p)*(N-5), A1=0, A2=0, Is=5, 
+                       R=0)
+initial.conditions3 &lt;- c(S1 = p*(N-10), S2 = (1-p)*(N-10), A1=0, A2=0, Is=10, 
+                       R=0)
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differntial equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the intial conditions in each simulation. This allows us to compare and contrast what happens in the short and long term of each simulation as we change the initial conditions. 
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions1, func = model.system, 
+                                parms=model.parameters, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions2, func = model.system, 
+                                parms=model.parameters, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions3, func = model.system, 
+                                parms=model.parameters, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;I = 1&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;I = 5&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;I = 10&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;I = 1&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;I = 5&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;I = 10&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;I = 1&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;I = 5&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;I = 10&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
+</div>
+<div id="changing-individual-parameters" class="section level3 tabset">
+<h3 class="tabset">Changing Individual Parameters</h3>
+<p>By varying individual parameters, we are able to isolate the
+different parameters that play a role in the determination of the short
+term, long term, and equilibrium behavior of the system of differential
+equations. Click on the bos below each graph for an interpretation on
+what the graph means.</p>
+<div id="b1" class="section level4">
+<h4>b1</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.12, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.024, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;b1 = 0.12&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;b1 = 0.024&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;b1 = 0.012&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b1 = 0.12&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b1 = 0.024&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b1 = 0.012&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;b1 = 0.12&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;b1 = 0.024&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;b1 = 0.012&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
+</div>
+<div id="b2" class="section level4">
+<h4>b2</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.0009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.00009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;b2 = 0.009&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;b2 = 0.0009&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;b2 = 0.00009&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b2 = 0.009&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b2 = 0.0009&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;b2 = 0.00009&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;b2 = 0.009&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;b2 = 0.0009&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;b2 = 0.00009&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
+</div>
+<div id="a1" class="section level4">
+<h4>a1</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.0001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.01, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;a1=0.0001&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;a1=0.001&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;a1=0.01&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a1=0.0001&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a1=0.001&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a1=0.01&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;a1=0.0001&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;a1=0.001&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;a1=0.01&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-7-3.png" width="672" /></p>
+</div>
+<div id="a2" class="section level4">
+<h4>a2</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.0023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.23, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;a2=0.0023&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;a2=0.023&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;a2=0.23&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a2=0.0023&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a2=0.023&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;a2=0.23&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;a2=0.0023&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;a2=0.023&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;a2=0.23&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-8-3.png" width="672" /></p>
+</div>
+<div id="l" class="section level4">
+<h4>l</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.5, g = 0.005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.8, g = 0.005, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;l= 0.5&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;l= 0.65&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;l= 0.8&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;l= 0.5&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;l= 0.65&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;l= 0.8&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;l= 0.5&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;l= 0.65&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;l= 0.8&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
+</div>
+<div id="g" class="section level4">
+<h4>g</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.0005, k = 0.0009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.05, k = 0.0009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;g = 0.0005&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;g = 0.005&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;g = 0.05&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;g = 0.0005&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;g = 0.005&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;g = 0.05&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;g = 0.0005&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;g = 0.005&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;g = 0.05&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
+</div>
+<div id="k" class="section level4">
+<h4>k</h4>
+<pre class="r"><code>################ SIR model - This portion sets up the equations that make up the model. 
+model.system &lt;- function(time,state,parameters){
+  with(as.list(c(state,parameters)),{
+    N = S1+S2+A1+A2+Is+R
+    I = A1+A2+Is
+    A = A1+A2
+    s1 = S1/N
+    s2 = S2/N
+    dS1 = a2*s2 - (a1 + b1*I)*s1
+    dS2 = a1*s1 - (a2 + b2*I)*s2
+    dA1 = (1-l)*b1*s1*I + a2*A2 - (a1+g+k)*A1
+    dA2 = (1-l)*b2*s2*I + a1*A1 - (a2+g+k)*A2
+    dIs = l*(b1*s1 + b2*s2)*I + g*A - k*Is
+    dR = k*I
+    return(list(c(dS1,dS2,dA1,dA2,dIs,dR)))
+  }
+  )
+}
+
+model.parameters1 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.00009)
+model.parameters2 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.0009)
+model.parameters3 &lt;- c(b2 = 0.009, b1 = 0.012, a1=0.001, a2=0.023, 
+                      l= 0.65, g = 0.005, k = 0.009)
+
+################ Simulation - This part sets up the details of the simulation. It sets up the timesteps, length of the simulation, the initial conditions, and parameters.
+dt &lt;- 0.1  # timestep
+p  &lt;- 0.75
+N  &lt;- 100
+timesteps &lt;- seq(0, 5000, by=dt)
+
+initial.conditions &lt;- c(S1 = p*(N-1), S2 = (1-p)*(N-1), A1=0, A2=0, Is=1, 
+                       R=0)
+
+
+############### Simulation - This potion runs the simulation that computes the differential equation. We use an &quot;ode&quot; or ordinary differential equation solver to solve this system. In this case, we are creating three different simulations so that we can vary the model parameters in each simulation.  
+
+simulation1 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters1, times=timesteps)) 
+
+simulation2 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters2, times=timesteps))
+
+simulation3 &lt;- as.data.frame(ode(y=initial.conditions, func = model.system, 
+                                parms=model.parameters3, times=timesteps))
+
+################ Visualization - This portion creates the graphs from the data that we just created.
+plotS &lt;- ggplot() +
+  geom_line(simulation1,mapping=aes(x=time, y=S1+S2, color = &#39;k = 0.00009&#39;)) +    
+  geom_line(simulation2,mapping=aes(x=time, y=S1+S2, color = &#39;k = 0.0009&#39;)) +    
+  geom_line(simulation3,mapping=aes(x=time, y=S1+S2, color = &#39;k = 0.009&#39;))+ 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Succeptible Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotI&lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=Is+A1+A2, color = &#39;k = 0.00009&#39;)) + 
+    geom_line(simulation2,mapping=aes(x=time, y=Is+A1+A2, color = &#39;k = 0.0009&#39;)) + 
+    geom_line(simulation3,mapping=aes(x=time, y=Is+A1+A2, color = &#39;k = 0.009&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Infected Populations&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+plotR &lt;- ggplot() +
+    geom_line(simulation1,mapping=aes(x=time, y=R, color = &#39;k = 0.00009&#39;)) + 
+  geom_line(simulation2,mapping=aes(x=time, y=R, color = &#39;k = 0.0009&#39;)) + 
+  geom_line(simulation3,mapping=aes(x=time, y=R, color = &#39;k = 0.009&#39;)) + 
+  labs(x=&quot;Time&quot;, y=&quot;Population&quot;, color=&#39;Legend&#39;) +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0), limits=c(0, 1.1*N)) + 
+  theme_bw() +
+  ggtitle(&quot;Recovered Population&quot;)+
+  theme(plot.margin = margin(15,15,15,15))
+
+############## Plot - This is the portion that outputs the plot. 
+
+plotS</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>plotI </code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
+<pre class="r"><code>plotR</code></pre>
+<p><img src="basicmodel_files/figure-html/unnamed-chunk-11-3.png" width="672" /></p>
+</div>
+</div>
+<div id="overall-evaluation" class="section level3">
+<h3>Overall Evaluation</h3>
+<p>This result makes sense logically. The only time that the model
+approaches equilibrium is when there is no disease present in the
+population. Additionally, over a sufficient period of time, all sets of
+initial conditions proceed to a disease free equilibrium. This makes
+sense because once a person is recovered, there is no way for them to
+become susceptible again.</p>
+<p>This disease gives us knowledge about the short term behavior of a
+disease related to sociological parameters, however the long term
+behavior the disease is unknown because a lack of reinfection is
+unlikely in the real world. In order to improve this model in longer
+term disease prediction, a reinfection portion can be added. This would
+make the theoretical disease we are representing closer to the flu or
+COVID-19. IN the next section we will explore improvements to this
+model.</p>
+</div>
+</div>
+
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWR2YW5jZWQgU0lSIE1vZGVsIgpvdXRwdXQ6CiAgaHRtbF9kb2N1bWVudDoKICAgIHRvYzogdHJ1ZQogICAgdG9jX2Zsb2F0OiB0cnVlCiAgICBjb2RlX2ZvbGRpbmc6IGhpZGUKICAgIGNvZGVfZG93bmxvYWQ6IHRydWUKaGVhZGVyLWluY2x1ZGVzOiAKICAtIFx1c2VwYWNrYWdle3Rpa3p9CiAgLSBcdXNlcGFja2FnZXtwZ2ZwbG90c30KICAtIFx1c2VwYWNrYWdle3BnZix0aWt6LHBnZnBsb3RzfQogIC0gXHBnZnBsb3Rzc2V0e2NvbXBhdD0xLjE1fQogIC0gXHVzZXBhY2thZ2V7bWF0aHJzZnN9CiAgLSBcdXNldGlremxpYnJhcnl7YXJyb3dzfQogIC0gXHVzZXRpa3psaWJyYXJ5e3BhdHRlcm5zfQotLS0KCgojIyBNb3RpdmF0aW9uCgpTaW5jZSB0aGUgY3JlYXRpb24gb2YgdGhlIGJhc2ljIFNJUiBtb2RlbCBmb3IgZGlzZWFzZXMsIHRoZXJlIGhhdmUgbnVtZXJvdXMgYWRkaXRpb25hbCwgbW9yZSBhZHZhbmNlZCBTSVIgbW9kZWxzLiBUaGlzIHNwZWNpZmljIFttb2RlbF0oaHR0cHM6Ly9pci5saWJyYXJ5LmlsbGlub2lzc3RhdGUuZWR1L3Nwb3JhL3ZvbDgvaXNzMS82LykgYnkgRHIuIFJvYmVydCBBbGxlbiwgRHIuIEthdGhlcmluZSBIZWxsZXIgYW5kIERyLiBNYXR0aGV3IFBvbnMgaXMgdGhlIGJhc2lzIG9mIHRoZSByZWluZmVjdGlvbiBtb2RlbCBkaXNjdXNzZWQgbGF0ZXIuIEluIHRoaXMgbW9kZWwsIHRoZSBiYXNpYyBTSVIgbW9kZWwgaGFzIGFkZGl0aW9uYWwgc29jaW9sb2dpY2FsIHBhcmFtZXRlcnMgYWRkZWQuIEluIHRoaXMgY2FzZSwgdGhleSBhZGRlZCB0d28gZGlmZmVyZW50IHN1YnBvcHVsYXRpb25zIHRoYXQgZG8gbm90IGRpZmZlcmVudCBpbiBhbnkgd2F5IGJpb2xvZ2ljYWxseSwgdGhleSBvbmx5IGRpZmZlciBpbiBiZWhhdmlvci4gVGhpcyBiZWhhdmlvciBpcyB3aGF0IGRldGVybWluZXMgaG93IHN1Y2NlcHRpYmxlIHRvIGlsbG5lc3MgdGhleSBhcmUuIFNvLCBmb3IgZXhhbXBsZSwgb25lIHN1YnBvcHVsYXRpb24gbWF5IHNvY2lhbCBkaXN0YW5jZSwgd2VhciBtYXNrcywgb3Igd2FzaCB0aGVpciBoYW5kcyBtb3JlIG9mdGVuIHRoYXQgdGhlIG90aGVyIHN1YnBvcHVsYXRpb24uIAoKSXQgaXMgaW1wb3J0YW50IHRvIGZpcnN0IG1ha2UgYXNzdW1wdGlvbnMgb24gdGhlIG1vZGVsIHNvIHRoYXQgd2UgY2FuIHJlcHJlc2VudCB0aGUgcHJvZ3Jlc3Npb24gb2YgdGhlIGRpc2Vhc2UgaW4gdGhlIGNvcnJlY3QgbWFubmVyLiBGb3Igb25lLCB3ZSBhc3N1bWUgdGhhdCB0aGVyZSBhcmUgdHdvIHNlcGFyYXRlIHN1c2NlcHRpYmxlIHBvcHVsYXRpb25zICRTXzEkIGFuZCAkU18yJC4gVGhlICRTXzEkIHBvcHVsYXRpb24gaXMgbW9yZSBsaWtlbHkgdG8gY2F0Y2ggdGhlIGRpc2Vhc2UsIHRoZXJlZm9yZSBpdHMgaW5mZWN0aW9uIHJhdGUsICRcYmV0YV8xJCBpcyBhbHdheXMgZ3JlYXRlciB0aGFuIHRoZSBpbmZlY3Rpb24gcmF0ZSBmb3IgJFNfMiQgcG9wdWxhdGlvbiwgJFxiZXRhXzIkLiBUaGVyZSBpcyBhbHNvIG1vdmVtZW50IGJldHdlZW4gdGhlIHN1YnBvcHVsYXRpb25zIGRldGVybWluZWQgYnkgY29uc3RhbnRzICRcYWxwaGFfMSQgYW5kICRcYWxwaGFfMiQuIFRoZXNlIGNvbnN0YW50cyByZXByZXNlbnQgcGVvcGxlcyBjaGFuZ2VzIGluIGJlaGF2aW9yLiBJbiBvdGhlciB3b3JkcywgaWYgc29tZW9uZSB3YXMgdG8gZGVjaWRlIHRvIGJlY29tZSBtb3JlIG9yIGxlc3MgY2F1dGlvdXMsIHRoZXJlZm9yZSBsb3dlcmluZyBvciByYWlzaW5nIHRoZWlyIHJpc2ssIHRoZXkgd2lsbCBzd2l0Y2ggZnJvbSBvbmUgc3VicG9wdWxhdGlvbiB0byBhbm90aGVyLiBUaGlzIHJhdGUgb2YgY2hhbmdlIGZyb20gb25lIHN1YnBvcHVsYXRpb24gdG8gYW5vdGhlciBpcyBleHByZXNzZWQgaW4gdGhlICRcYWxwaGEkIHRlcm0uIAoKQWRkaXRpb25hbGx5LCB0aGVyZSBpcyBtb3JlIHN1YnBvcHVsYXRpb25zIGluIHRoZSBpbmZlY3Rpb3VzIHBvcnRpb24gb2YgdGhlIG5ldyBTSVIgbW9kZWwgYXMgY29tcGFyZWQgdG8gdGhlIG9yaWdpbmFsLiBUaGlzIGNhc2UgYWNjb3VudHMgZm9yIGJvdGggcGVvcGxlIHdobyBhcmUgaW5mZWN0ZWQgYW5kIHN5bXB0b21hdGljLCAkSV9zJCBhbmQgdHdvIHN1YnBvcHVsYXRpb25zIG9mIGFzeW1wdG9tYXRpYyBwZW9wbGUgJEFfMSQgYW5kICRBXzIkLiBUaGVzZSBwb3B1bGF0aW9ucyBhZGRlZCB0b2dldGhlciBhcmUgZXF1aXZhbGVudCB0byB0aGUgdG90YWwgaW5mZWN0ZWQgcG9wdWxhdGlvbiwgJEkkLiBUaGUgaW5mZWN0ZWQgcG9wdWxhdGlvbnMgYXJlIHNwbGl0IGJ5IHRoZSBjb25zdGFudCAkXGxhbWJkYSQsIHdoZXJlICRcbGFtYmRhJCBwcm9wb3J0aW9uIG9mIHBlb3BsZSBnbyBpbnRvIHRoZSBpbmZlY3RlZCBhbmQgc3ltcHRvbWF0aWMgcG9ydGlvbiBvZiB0aGUgbW9kZWwgYW5kICQxIC0gXGxhbWJkYSQgcHJvcG9ydGlvbiBvZiBwZW9wbGUgZ28gaW50byB0aGUgYXN5bXB0b21hdGljIHBvb2wgb2YgcGVvcGxlIHdoZW4gaW5mZWN0ZWQuIEFkZGl0aW9uYWxseSwgcGVvcGxlIHdobyBhcmUgYXN5bXB0b21hdGljIGNhbiBiZWNvbWUgc3ltcHRvbWF0aWMuIFRoZXkgZG8gdGhpcyBhdCB0aGUgcmF0ZSBvZiAkXGdhbW1hJC4gSG93ZXZlciBwZW9wbGUgd2hvIGFyZSBzeW1wdG9tYXRpYyBjYW5ub3QgYmVjb21lIGFzeW1wdG9tYXRpYyB3aXRob3V0IHJlY292ZXJpbmcuIFRoZXJlIGlzIGFsc28gbW92ZW1lbnQgYmV0d2VlbiB0aGUgJEFfMSQgYW5kICRBXzIkIHBvcHVsYXRpb25zIGRlbm90ZWQgYnkgJFxhbHBoYV8xJCBhbmQgJFxhbHBoYV8yJCBwYXJhbXRlcnMuIFdoZXRoZXIgYSBwZXJzb24gaXMgYXN5bXB0b21hdGljIG9yIHN5bXB0b21hdGljIGhhcyBubyBlZmZlY3Qgb24gaG93IGluZmVjdGlvdXMgdGhleSBhcmUgdG93YXJkcyBvdGhlciBwZW9wbGUuIEZpbmFsbHksIHRoZXJlIGlzIGEgc2luZ2xlIHJlY292ZXJlZCBwb3B1bGF0aW9uLCBSLCB3aGljaCBpcyB3aGVyZSBhbGwgcGVvcGxlIHdobyBoYXZlIGNhdWdodCB0aGUgZGlzZWFzZSwgYW5kIHJlY292ZXJlZCBmcm9tIGVudGVyLiBQZW9wbGUgY2FuIGVudGVyIHRoZSByZWNvdmVyZWQgcG9wdWxhdGlvbiBlaXRoZXIgZnJvbSB0aGUgYXN5bXB0b21hdGljIG9yIHRoZSBzeW1wdG9tYXRpYyBwb29sIG9mIGluZmVjdGVkIHBlb3BsZS4gUGVvcGxlIHdobyBhcmUgYXN5bXB0b21hdGljIGNhbiBiZWNvbWUgc3ltcHRvbWF0aWMsIHRoZW4gcmVjb3Zlciwgb3IganVzdCBzaW1wbHkgcmVjb3Zlci4gT25jZSBhIHBlcnNvbiBiZWNvbWVzIGluZmVjdGVkIGFuZCBzeW1wdG9tYXRpYywgdGhlIG9ubHkgdGhpbmcgdGhleSBjYW4gZG8gaXMgbW92ZSB0byB0aGUgcmVjb3ZlcmVkIHBvcHVsYXRpb24uIFRoZSByYXRlIGF0IHdoaWNoIHBlb3BsZSByZWNvdmVyIGZyb20gZWl0aGVyIHBvcHVsYXRpb24gaXMgZXhwcmVzc2VkIGFzIHRoZSBjb25zdGFudCAkXGthcHBhJCwgYW5kIGlzIGRlcGVuZGVudCBvbiB0aGUgbnVtYmVyIG9mIHBlb3BsZSBpbiB0aGUgaW5mZWN0ZWQgcG9wdWxhdGlvbiwgYnV0IGJvdGggYXN5bXB0b21hdGljIGFuZCBzeW1wdG9tYXRpYyBwZW9wbGUgcmVjb3ZlciBhdCB0aGUgc2FtZSByYXRlLiAKCiMjIENyZWF0aW5nIHRoZSBNb2RlbAoKV2hpbGUgYWxsIG9mIHRoZXNlIGFzc3VtcHRpb25zIG1heSBzZWVtIHRlZGlvdXMsIHRoZXkgYXJlIGluY3JlZGlibHkgaW1wb3J0YW50IGluIGNyZWF0aW5nIGEgbW9kZWwgdGhhdCBhY2N1cmF0ZWx5IHJlcHJlc2VudHMgd2hhdCB5b3Ugd2FudC4gTm93LCB3ZSBnZW5lcmF0ZSBhIHBpY3R1cmUgb3IgcmVwcmVzZW50YXRpb24gb2YgdGhlIG1vZGVsIHRoYXQgd2lsbCBhYmxlIHRvIGhlbHAgdXMgY3JlYXRlIGEgc3lzdGVtIG9mIGRpZmZlcmVudGlhbCBlcXVhdGlvbnMuIEluIHRoaXMgbW9kZWwsIGVhY2ggaW5kaXZpZHVhbCBwb3B1bGF0aW9uIGlzIGEgYm94LCBhbmQsIGJhc2VkIG9uIG91ciBhc3N1bXB0aW9ucywgYXJyb3dzIG1vdmUgYmV0d2VlbiBlYWNoIHBvcHVsYXRpb24gdG8gcmVwcmVzZW50IHRoZSBjaGFuZ2VzIGluIGVhY2guIFdlIHRoZW4gYXJlIGFibGUgdG8gdXNlIGNvbnN0YW50cyBhbmQgdGhlIHBvcHVsYXRpb24gdmFsdWVzIHRvIGxhYmVsIHRoZSBhcnJvd3Mgd2l0aCByZXByZXNlbnRhdGl2ZSBlcXVhdGlvbnMuIEJhc2VkIG9uIHRoaXMgaW5mb3JtYXRpb24sIHRoZSBmb2xsb3dpbmcgbW9kZWwgY2FuIGJlIGNyZWF0ZWQuIAoKCmBgYHtyLCBlY2hvPUZBTFNFLCBlbmdpbmU9J3Rpa3onLCBvdXQud2lkdGg9JzkwJScsIGZpZy5leHQ9aWYgKGtuaXRyOjo6aXNfbGF0ZXhfb3V0cHV0KCkpICdwZGYnIGVsc2UgJ3BuZyd9Clx1c2V0aWt6bGlicmFyeXthcnJvd3N9Clx0aWt6c3R5bGV7c3RhdGV9ID0gW3JlY3RhbmdsZSwgZHJhdywgbm9kZSBkaXN0YW5jZT0xLjc1Y20sIHRleHQgd2lkdGg9MmVtLCB0ZXh0IGNlbnRlcmVkLCBtaW5pbXVtIGhlaWdodD0yZW0sIHRoaWNrXQpcdXNldGlremxpYnJhcnl7cGF0dGVybnN9ClxiZWdpbnt0aWt6cGljdHVyZX0gWy0+LD49c3RlYWx0aCxldmVyeSBub2RlLy5zdHlsZT17Zm9udD1cc2NyaXB0c2l6ZX1dClxjb29yZGluYXRlIChjZW50ZXIpOwpcbm9kZVtzdGF0ZV0gKElzKSBbbGVmdCBvZj1jZW50ZXJdIHskSV9zJH07Clxub2RlW3N0YXRlXSAoUikgW3JpZ2h0IG9mPWNlbnRlcl0geyRSJH07Clxub2RlW3N0YXRlXSAoQTEpIFtyaWdodCBvZj1SLCBhYm92ZSBvZiA9IFIsIG5vZGUgZGlzdGFuY2U9Mi41Y21dIHskQV8xJH07Clxub2RlW3N0YXRlXSAoQTIpIFtyaWdodCBvZj1SLCBiZWxvdyBvZiA9IFIsIG5vZGUgZGlzdGFuY2U9Mi41Y21dIHskQV8yJH07Clxub2RlW3N0YXRlXSAoUzEpIFtsZWZ0IG9mPUlzLCBhYm92ZSBvZiA9IElzLCBub2RlIGRpc3RhbmNlPTIuNWNtXSB7JFNfMSR9Owpcbm9kZVtzdGF0ZV0gKFMyKSBbbGVmdCBvZj1JcywgYmVsb3cgb2YgPSBJcywgbm9kZSBkaXN0YW5jZT0yLjVjbV0geyRTXzIkfTsKCgpccGF0aCAoSXMpIGVkZ2Ugbm9kZSBbYWJvdmVdIHskXGthcHBhIElfcyR9IChSKTsKXHBhdGggKEExKSBlZGdlIG5vZGUgW2Fib3ZlXSB7JFxnYW1tYSBBXzEkfSAoSXMpOwpccGF0aCAoQTIpIGVkZ2Ugbm9kZSBbYWJvdmVdIHskXGdhbW1hIEFfMiR9IChJcyk7ClxwYXRoIChTMSkgZWRnZSBub2RlIFthYm92ZV0geyQoMS1cbGFtYmRhKVxiZXRhXzFTXzFJJH0gKEExKTsKXHBhdGggKFMyKSBlZGdlIG5vZGUgW2Fib3ZlXSB7JCgxLVxsYW1iZGEpXGJldGFfMlNfMkkkfSAoQTIpOwpccGF0aCBbYmVuZCBsZWZ0PTE1XShTMSkgZWRnZSBub2RlIFthYm92ZV0geyRcYWxwaGFfMSBTXzEkfSAoUzIpOwpccGF0aCBbYmVuZCBsZWZ0PTE1XShTMikgZWRnZSBub2RlIFthYm92ZV0geyRcYWxwaGFfMiBTXzIkfSAoUzEpOwpccGF0aCBbYmVuZCBsZWZ0PTE1XShBMSkgZWRnZSBub2RlIFthYm92ZV0geyRcYWxwaGFfMSBBXzEkfSAoQTIpOwpccGF0aCBbYmVuZCBsZWZ0PTE1XShBMikgZWRnZSBub2RlIFthYm92ZV0geyRcYWxwaGFfMiBBXzIkfSAoQTEpOwpccGF0aCAoUzEpIGVkZ2Ugbm9kZSBbYWJvdmVdIHskXGxhbWJkYVxiZXRhXzFTXzFJJH0gKElzKTsKXHBhdGggKFMyKSBlZGdlIG5vZGUgW2Fib3ZlXSB7JFxsYW1iZGFcYmV0YV8yU18ySSR9IChJcyk7ClxwYXRoIChBMSkgZWRnZSBub2RlIFthYm92ZV0geyRca2FwcGEgQV8xJH0gKFIpOwpccGF0aCAoQTIpIGVkZ2Ugbm9kZSBbYWJvdmVdIHskXGthcHBhIEFfMiR9IChSKTsKCgpcZW5ke3Rpa3pwaWN0dXJlfQoKYGBgCgoKIyMgRXZhbHVhdGlvbiAKCkluIG9yZGVyIHRvIGV2YWx1YXRlIHRoaXMgbW9kZWwsIHdlIHdpbGwgcHJpbWFyaWx5IGxvb2sgdG93YXJkcyBkZXRlcm1pbmluZyBlcXVpbGlicml1bSBwb2ludHMgbnVtZXJpY2FsbHkuIFRoaXMgbWVhbnMgZXZhbHVhdGluZyB3aGF0IGhhcHBlbnMgdG8gZWFjaCBvZiB0aGUgcG9wdWxhdGlvbnMgb3ZlciB0aW1lIGJ5IHVzaW5nIGEgY29tcHV0ZXIgcHJvZ3JhbSB0byBnZW5lcmF0ZSBncmFwaHMgb3ZlciBsb25nIHBlcmlvZHMgb2YgdGltZS4gVGhlcmUgYXJlIGFsc28gd2F5cyB0byBldmFsdWF0ZSB0aGlzIHN5c3RlbSBhbmFseXRpY2FsbHkuIEZvciBmdXJ0aGVyIGluZm9ybWF0aW9uIG9uIGhvdyB0byBpbnRlcnByZXQgdGhpcyBzeXN0ZW0gYW5hbHl0aWNhbGx5IHZpc2l0IHRoZSBbb3JpZ2luYWwgcGFwZXJdKGh0dHBzOi8vaXIubGlicmFyeS5pbGxpbm9pc3N0YXRlLmVkdS9zcG9yYS92b2w4L2lzczEvNi8pCgojIyBHcmFwaGluZwoKT25lIG9mIHRoZSBiZXN0IHdheXMgdG8gdmlldyB0aGUgbG9uZyB0ZXJtIGFuZCBzaG9ydCB0ZXJtIGJlaGF2aW9yIG9mIHRoZSBzeXN0ZW0gaXMgYnkgbnVtZXJpY2FsbHkgc29sdmluZyB0aGUgc3lzdGVtIHdpdGggYSBjb21wdXRlciBwcm9ncmFtLiBUaGUgZm9sbG93aW5nIGNvZGUgZGV0YWlscyBob3cgdG8gdGFrZSB0aGUgZGlmZmVyZW50aWFsIGVxdWF0aW9uIGFib3ZlIGFuZCBzb2x2ZSBpdCB1c2luZyBhIGNvbXB1dGVyIHByb2dyYW0uIAoKIyMjIEJhc2ljIEdyYXBoCgpUaGlzIGlzIGEgZ3JhcGggdGhhdCBpbmNsdWRlcyBhbGwgcG9wdWxhdGlvbnMgaW4gdGhlIG1vZGVsIHdpdGggbm8gY2hhbmdlcyBpbiBwYXJhbWV0ZXJzLiBUaGlzIHByb3ZpZGVzIGEgYmFzZWxpbmUgb24gd2hhdCB0aGUgbW9kZWwgbG9va3MgbGlrZSB3aXRoIG5vIGNoYW5nZXMgdG8gcGFyYW1ldGVycyBvciBpbml0aWFsIGNvbmRpdGlvbnMuIAoKYGBge3IsIGluY2x1ZGU9RkFMU0V9CnJtKGxpc3Q9bHMoKSkgICMgY2xlYXIgb3V0IHZhcmlhYmxlcyBmcm9tIHByZXZpb3VzIHJ1bnMKcmVxdWlyZShkZVNvbHZlKQpyZXF1aXJlKGdncGxvdDIpCnJlcXVpcmUoZ2dwdWJyKQoKYGBgCmBgYHtyLCBpbmNsdWRlPVRSVUV9CgojIyMjIyMjIyMjIyMjIyMjIFNJUiBtb2RlbCAtIFRoaXMgcG9ydGlvbiBzZXRzIHVwIHRoZSBlcXVhdGlvbnMgdGhhdCBtYWtlIHVwIHRoZSBtb2RlbC4gCm1vZGVsLnN5c3RlbSA8LSBmdW5jdGlvbih0aW1lLHN0YXRlLHBhcmFtZXRlcnMpewogIHdpdGgoYXMubGlzdChjKHN0YXRlLHBhcmFtZXRlcnMpKSx7CiAgICBOID0gUzErUzIrQTErQTIrSXMrUgogICAgSSA9IEExK0EyK0lzCiAgICBBID0gQTErQTIKICAgIHMxID0gUzEvTgogICAgczIgPSBTMi9OCiAgICBkUzEgPSBhMipzMiAtIChhMSArIGIxKkkpKnMxCiAgICBkUzIgPSBhMSpzMSAtIChhMiArIGIyKkkpKnMyCiAgICBkQTEgPSAoMS1sKSpiMSpzMSpJICsgYTIqQTIgLSAoYTErZytrKSpBMQogICAgZEEyID0gKDEtbCkqYjIqczIqSSArIGExKkExIC0gKGEyK2craykqQTIKICAgIGRJcyA9IGwqKGIxKnMxICsgYjIqczIpKkkgKyBnKkEgLSBrKklzCiAgICBkUiA9IGsqSQogICAgcmV0dXJuKGxpc3QoYyhkUzEsZFMyLGRBMSxkQTIsZElzLGRSKSkpCiAgfQogICkKfQoKbW9kZWwucGFyYW1ldGVycyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCgojIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBhcnQgc2V0cyB1cCB0aGUgZGV0YWlscyBvZiB0aGUgc2ltdWxhdGlvbi4gSXQgc2V0cyB1cCB0aGUgdGltZXN0ZXBzLCBsZW5ndGggb2YgdGhlIHNpbXVsYXRpb24sIHRoZSBpbml0aWFsIGNvbmRpdGlvbnMsIGFuZCBwYXJhbWV0ZXJzLgpkdCA8LSAwLjEgICMgdGltZXN0ZXAKcCAgPC0gMC43NQpOICA8LSAxMDAKdGltZXN0ZXBzIDwtIHNlcSgwLCA1MDAwLCBieT1kdCkKCmluaXRpYWwuY29uZGl0aW9ucyA8LSBjKFMxID0gcCooTi0xKSwgUzIgPSAoMS1wKSooTi0xKSwgQTE9MCwgQTI9MCwgSXM9MSwgCiAgICAgICAgICAgICAgICAgICAgICAgUj0wKQoKIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBvdGlvbiBydW5zIHRoZSBzaW11bGF0aW9uIHRoYXQgY29tcHV0ZXMgdGhlIGRpZmZlcmVudGlhbCBlcXVhdGlvbi4gV2UgdXNlIGFuICJvZGUiIG9yIG9yZGluYXJ5IGRpZmZlcm50aWFsIGVxdWF0aW9uIHNvbHZlciB0byBzb2x2ZSB0aGlzIHN5c3RlbS4gCnNpbXVsYXRpb24gPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMsIHRpbWVzPXRpbWVzdGVwcykpIAoKIyMjIyMjIyMjIyMjIyMjIyBWaXN1YWxpemF0aW9uIC0gVGhpcyBwb3J0aW9uIGNyZWF0ZXMgdGhlIGdyYXBocyBmcm9tIHRoZSBkYXRhIHRoYXQgd2UganVzdCBjcmVhdGVkLgpwbG90U0lSIDwtIGdncGxvdCgpICsKICBnZW9tX2xpbmUoc2ltdWxhdGlvbixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzEsIGNvbG9yID0gJ1MxJykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24sbWFwcGluZz1hZXMoeD10aW1lLCB5PVMyLCBjb2xvciA9ICdTMicpKSArICAgIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24sbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzLCBjb2xvciA9ICdJcycpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24sbWFwcGluZz1hZXMoeD10aW1lLCB5PUExLCBjb2xvciA9ICdBMScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24sbWFwcGluZz1hZXMoeD10aW1lLCB5PUEyLCBjb2xvciA9ICdBMicpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24sbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ1InKSkgKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgojIyMjIyMjIyMjIyMjIyBQbG90IC0gVGhpcyBpcyB0aGUgcG9ydGlvbiB0aGF0IG91dHB1dHMgdGhlIHBsb3QuIAoKcGxvdFNJUgpgYGAKCiMjIyBDaGFuZ2luZyBJbml0aWFsIENvbmRpdGlvbnMKCkJ5IHZhcnlpbmcgdGhlIGluaXRpYWwgY29uZGl0aW9ucyBhbmQga2VlcGluZyBhbGwgb3RoZXIgcGFyYW1ldGVycyBjb25zdGFudCwgd2UgYXJlIGFibGUgdG8gc2VlIHRoZSBkaXJlY3QgZWZmZWN0IHRoYXQgdGhlIGluaXRpYWwgY29uZGl0aW9ucyBoYXZlIG9uIGJvdGggdGhlIHNob3J0IHRlcm0gYW5kIGxvbmcgdGVybSBiZWhhdmlvciBvZiB0aGUgc3lzdGVtLiAKCmBgYHtyLCBpbmNsdWRlPVRSVUV9CgojIyMjIyMjIyMjIyMjIyMjIFNJUiBtb2RlbCAtIFRoaXMgcG9ydGlvbiBzZXRzIHVwIHRoZSBlcXVhdGlvbnMgdGhhdCBtYWtlIHVwIHRoZSBtb2RlbC4gCm1vZGVsLnN5c3RlbSA8LSBmdW5jdGlvbih0aW1lLHN0YXRlLHBhcmFtZXRlcnMpewogIHdpdGgoYXMubGlzdChjKHN0YXRlLHBhcmFtZXRlcnMpKSx7CiAgICBOID0gUzErUzIrQTErQTIrSXMrUgogICAgSSA9IEExK0EyK0lzCiAgICBBID0gQTErQTIKICAgIHMxID0gUzEvTgogICAgczIgPSBTMi9OCiAgICBkUzEgPSBhMipzMiAtIChhMSArIGIxKkkpKnMxCiAgICBkUzIgPSBhMSpzMSAtIChhMiArIGIyKkkpKnMyCiAgICBkQTEgPSAoMS1sKSpiMSpzMSpJICsgYTIqQTIgLSAoYTErZytrKSpBMQogICAgZEEyID0gKDEtbCkqYjIqczIqSSArIGExKkExIC0gKGEyK2craykqQTIKICAgIGRJcyA9IGwqKGIxKnMxICsgYjIqczIpKkkgKyBnKkEgLSBrKklzCiAgICBkUiA9IGsqSQogICAgcmV0dXJuKGxpc3QoYyhkUzEsZFMyLGRBMSxkQTIsZElzLGRSKSkpCiAgfQogICkKfQoKbW9kZWwucGFyYW1ldGVycyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCgojIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBhcnQgc2V0cyB1cCB0aGUgZGV0YWlscyBvZiB0aGUgc2ltdWxhdGlvbi4gSXQgc2V0cyB1cCB0aGUgdGltZXN0ZXBzLCBsZW5ndGggb2YgdGhlIHNpbXVsYXRpb24sIHRoZSBpbml0aWFsIGNvbmRpdGlvbnMsIGFuZCBwYXJhbWV0ZXJzLgpkdCA8LSAwLjEgICMgdGltZXN0ZXAKcCAgPC0gMC43NQpOICA8LSAxMDAKdGltZXN0ZXBzIDwtIHNlcSgwLCA1MDAwLCBieT1kdCkKCmluaXRpYWwuY29uZGl0aW9uczEgPC0gYyhTMSA9IHAqKE4tMSksIFMyID0gKDEtcCkqKE4tMSksIEExPTAsIEEyPTAsIElzPTEsIAogICAgICAgICAgICAgICAgICAgICAgIFI9MCkKaW5pdGlhbC5jb25kaXRpb25zMiA8LSBjKFMxID0gcCooTi01KSwgUzIgPSAoMS1wKSooTi01KSwgQTE9MCwgQTI9MCwgSXM9NSwgCiAgICAgICAgICAgICAgICAgICAgICAgUj0wKQppbml0aWFsLmNvbmRpdGlvbnMzIDwtIGMoUzEgPSBwKihOLTEwKSwgUzIgPSAoMS1wKSooTi0xMCksIEExPTAsIEEyPTAsIElzPTEwLCAKICAgICAgICAgICAgICAgICAgICAgICBSPTApCgojIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcG90aW9uIHJ1bnMgdGhlIHNpbXVsYXRpb24gdGhhdCBjb21wdXRlcyB0aGUgZGlmZmVyZW50aWFsIGVxdWF0aW9uLiBXZSB1c2UgYW4gIm9kZSIgb3Igb3JkaW5hcnkgZGlmZmVybnRpYWwgZXF1YXRpb24gc29sdmVyIHRvIHNvbHZlIHRoaXMgc3lzdGVtLiBJbiB0aGlzIGNhc2UsIHdlIGFyZSBjcmVhdGluZyB0aHJlZSBkaWZmZXJlbnQgc2ltdWxhdGlvbnMgc28gdGhhdCB3ZSBjYW4gdmFyeSB0aGUgaW50aWFsIGNvbmRpdGlvbnMgaW4gZWFjaCBzaW11bGF0aW9uLiBUaGlzIGFsbG93cyB1cyB0byBjb21wYXJlIGFuZCBjb250cmFzdCB3aGF0IGhhcHBlbnMgaW4gdGhlIHNob3J0IGFuZCBsb25nIHRlcm0gb2YgZWFjaCBzaW11bGF0aW9uIGFzIHdlIGNoYW5nZSB0aGUgaW5pdGlhbCBjb25kaXRpb25zLiAKCnNpbXVsYXRpb24xIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zMSwgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVycywgdGltZXM9dGltZXN0ZXBzKSkgCgpzaW11bGF0aW9uMiA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9uczIsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMsIHRpbWVzPXRpbWVzdGVwcykpCgpzaW11bGF0aW9uMyA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9uczMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMsIHRpbWVzPXRpbWVzdGVwcykpCgojIyMjIyMjIyMjIyMjIyMjIFZpc3VhbGl6YXRpb24gLSBUaGlzIHBvcnRpb24gY3JlYXRlcyB0aGUgZ3JhcGhzIGZyb20gdGhlIGRhdGEgdGhhdCB3ZSBqdXN0IGNyZWF0ZWQuCnBsb3RTIDwtIGdncGxvdCgpICsKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdJID0gMScpKSArICAgIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ0kgPSA1JykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnSSA9IDEwJykpKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiU3VjY2VwdGlibGUgUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgpwbG90STwtIGdncGxvdCgpICsKICAgIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9SXMrQTErQTIsIGNvbG9yID0gJ0kgPSAxJykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdJID0gNScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnSSA9IDEwJykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIkluZmVjdGVkIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdFIgPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdJID0gMScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnSSA9IDUnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ0kgPSAxMCcpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJSZWNvdmVyZWQgUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgojIyMjIyMjIyMjIyMjIyBQbG90IC0gVGhpcyBpcyB0aGUgcG9ydGlvbiB0aGF0IG91dHB1dHMgdGhlIHBsb3QuIAoKcGxvdFMKcGxvdEkgCnBsb3RSCmBgYAoKIyMjIENoYW5naW5nIEluZGl2aWR1YWwgUGFyYW1ldGVycyB7LnRhYnNldH0KCkJ5IHZhcnlpbmcgaW5kaXZpZHVhbCBwYXJhbWV0ZXJzLCB3ZSBhcmUgYWJsZSB0byBpc29sYXRlIHRoZSBkaWZmZXJlbnQgcGFyYW1ldGVycyB0aGF0IHBsYXkgYSByb2xlIGluIHRoZSBkZXRlcm1pbmF0aW9uIG9mIHRoZSBzaG9ydCB0ZXJtLCBsb25nIHRlcm0sIGFuZCBlcXVpbGlicml1bSBiZWhhdmlvciBvZiB0aGUgc3lzdGVtIG9mIGRpZmZlcmVudGlhbCBlcXVhdGlvbnMuIENsaWNrIG9uIHRoZSBib3MgYmVsb3cgZWFjaCBncmFwaCBmb3IgYW4gaW50ZXJwcmV0YXRpb24gb24gd2hhdCB0aGUgZ3JhcGggbWVhbnMuIAoKIyMjIyBiMQoKYGBge3IsIGluY2x1ZGU9VFJVRX0KCiMjIyMjIyMjIyMjIyMjIyMgU0lSIG1vZGVsIC0gVGhpcyBwb3J0aW9uIHNldHMgdXAgdGhlIGVxdWF0aW9ucyB0aGF0IG1ha2UgdXAgdGhlIG1vZGVsLiAKbW9kZWwuc3lzdGVtIDwtIGZ1bmN0aW9uKHRpbWUsc3RhdGUscGFyYW1ldGVycyl7CiAgd2l0aChhcy5saXN0KGMoc3RhdGUscGFyYW1ldGVycykpLHsKICAgIE4gPSBTMStTMitBMStBMitJcytSCiAgICBJID0gQTErQTIrSXMKICAgIEEgPSBBMStBMgogICAgczEgPSBTMS9OCiAgICBzMiA9IFMyL04KICAgIGRTMSA9IGEyKnMyIC0gKGExICsgYjEqSSkqczEKICAgIGRTMiA9IGExKnMxIC0gKGEyICsgYjIqSSkqczIKICAgIGRBMSA9ICgxLWwpKmIxKnMxKkkgKyBhMipBMiAtIChhMStnK2spKkExCiAgICBkQTIgPSAoMS1sKSpiMipzMipJICsgYTEqQTEgLSAoYTIrZytrKSpBMgogICAgZElzID0gbCooYjEqczEgKyBiMipzMikqSSArIGcqQSAtIGsqSXMKICAgIGRSID0gaypJCiAgICByZXR1cm4obGlzdChjKGRTMSxkUzIsZEExLGRBMixkSXMsZFIpKSkKICB9CiAgKQp9Cgptb2RlbC5wYXJhbWV0ZXJzMSA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4xMiwgYTE9MC4wMDEsIGEyPTAuMDIzLCAKICAgICAgICAgICAgICAgICAgICAgIGw9IDAuNjUsIGcgPSAwLjAwNSwgayA9IDAuMDAwOSkKbW9kZWwucGFyYW1ldGVyczIgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDI0LCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQptb2RlbC5wYXJhbWV0ZXJzMyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCgojIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBhcnQgc2V0cyB1cCB0aGUgZGV0YWlscyBvZiB0aGUgc2ltdWxhdGlvbi4gSXQgc2V0cyB1cCB0aGUgdGltZXN0ZXBzLCBsZW5ndGggb2YgdGhlIHNpbXVsYXRpb24sIHRoZSBpbml0aWFsIGNvbmRpdGlvbnMsIGFuZCBwYXJhbWV0ZXJzLgpkdCA8LSAwLjEgICMgdGltZXN0ZXAKcCAgPC0gMC43NQpOICA8LSAxMDAKdGltZXN0ZXBzIDwtIHNlcSgwLCA1MDAwLCBieT1kdCkKCmluaXRpYWwuY29uZGl0aW9ucyA8LSBjKFMxID0gcCooTi0xKSwgUzIgPSAoMS1wKSooTi0xKSwgQTE9MCwgQTI9MCwgSXM9MSwgCiAgICAgICAgICAgICAgICAgICAgICAgUj0wKQoKCiMjIyMjIyMjIyMjIyMjIyBTaW11bGF0aW9uIC0gVGhpcyBwb3Rpb24gcnVucyB0aGUgc2ltdWxhdGlvbiB0aGF0IGNvbXB1dGVzIHRoZSBkaWZmZXJlbnRpYWwgZXF1YXRpb24uIFdlIHVzZSBhbiAib2RlIiBvciBvcmRpbmFyeSBkaWZmZXJlbnRpYWwgZXF1YXRpb24gc29sdmVyIHRvIHNvbHZlIHRoaXMgc3lzdGVtLiBJbiB0aGlzIGNhc2UsIHdlIGFyZSBjcmVhdGluZyB0aHJlZSBkaWZmZXJlbnQgc2ltdWxhdGlvbnMgc28gdGhhdCB3ZSBjYW4gdmFyeSB0aGUgbW9kZWwgcGFyYW1ldGVycyBpbiBlYWNoIHNpbXVsYXRpb24uICAKCnNpbXVsYXRpb24xIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMSwgdGltZXM9dGltZXN0ZXBzKSkgCgpzaW11bGF0aW9uMiA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczIsIHRpbWVzPXRpbWVzdGVwcykpCgpzaW11bGF0aW9uMyA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczMsIHRpbWVzPXRpbWVzdGVwcykpCgojIyMjIyMjIyMjIyMjIyMjIFZpc3VhbGl6YXRpb24gLSBUaGlzIHBvcnRpb24gY3JlYXRlcyB0aGUgZ3JhcGhzIGZyb20gdGhlIGRhdGEgdGhhdCB3ZSBqdXN0IGNyZWF0ZWQuCnBsb3RTIDwtIGdncGxvdCgpICsKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdiMSA9IDAuMTInKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdiMSA9IDAuMDI0JykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnYjEgPSAwLjAxMicpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJTdWNjZXB0aWJsZSBQb3B1bGF0aW9ucyIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCnBsb3RJPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnYjEgPSAwLjEyJykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdiMSA9IDAuMDI0JykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdiMSA9IDAuMDEyJykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIkluZmVjdGVkIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdFIgPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdiMSA9IDAuMTInKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2IxID0gMC4wMjQnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2IxID0gMC4wMTInKSkgKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiUmVjb3ZlcmVkIFBvcHVsYXRpb24iKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgojIyMjIyMjIyMjIyMjIyBQbG90IC0gVGhpcyBpcyB0aGUgcG9ydGlvbiB0aGF0IG91dHB1dHMgdGhlIHBsb3QuIAoKcGxvdFMKcGxvdEkgCnBsb3RSCmBgYAoKIyMjIyBiMgoKYGBge3IsIGluY2x1ZGU9VFJVRX0KCiMjIyMjIyMjIyMjIyMjIyMgU0lSIG1vZGVsIC0gVGhpcyBwb3J0aW9uIHNldHMgdXAgdGhlIGVxdWF0aW9ucyB0aGF0IG1ha2UgdXAgdGhlIG1vZGVsLiAKbW9kZWwuc3lzdGVtIDwtIGZ1bmN0aW9uKHRpbWUsc3RhdGUscGFyYW1ldGVycyl7CiAgd2l0aChhcy5saXN0KGMoc3RhdGUscGFyYW1ldGVycykpLHsKICAgIE4gPSBTMStTMitBMStBMitJcytSCiAgICBJID0gQTErQTIrSXMKICAgIEEgPSBBMStBMgogICAgczEgPSBTMS9OCiAgICBzMiA9IFMyL04KICAgIGRTMSA9IGEyKnMyIC0gKGExICsgYjEqSSkqczEKICAgIGRTMiA9IGExKnMxIC0gKGEyICsgYjIqSSkqczIKICAgIGRBMSA9ICgxLWwpKmIxKnMxKkkgKyBhMipBMiAtIChhMStnK2spKkExCiAgICBkQTIgPSAoMS1sKSpiMipzMipJICsgYTEqQTEgLSAoYTIrZytrKSpBMgogICAgZElzID0gbCooYjEqczEgKyBiMipzMikqSSArIGcqQSAtIGsqSXMKICAgIGRSID0gaypJCiAgICByZXR1cm4obGlzdChjKGRTMSxkUzIsZEExLGRBMixkSXMsZFIpKSkKICB9CiAgKQp9Cgptb2RlbC5wYXJhbWV0ZXJzMSA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCm1vZGVsLnBhcmFtZXRlcnMyIDwtIGMoYjIgPSAwLjAwMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCm1vZGVsLnBhcmFtZXRlcnMzIDwtIGMoYjIgPSAwLjAwMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQoKIyMjIyMjIyMjIyMjIyMjIyBTaW11bGF0aW9uIC0gVGhpcyBwYXJ0IHNldHMgdXAgdGhlIGRldGFpbHMgb2YgdGhlIHNpbXVsYXRpb24uIEl0IHNldHMgdXAgdGhlIHRpbWVzdGVwcywgbGVuZ3RoIG9mIHRoZSBzaW11bGF0aW9uLCB0aGUgaW5pdGlhbCBjb25kaXRpb25zLCBhbmQgcGFyYW1ldGVycy4KZHQgPC0gMC4xICAjIHRpbWVzdGVwCnAgIDwtIDAuNzUKTiAgPC0gMTAwCnRpbWVzdGVwcyA8LSBzZXEoMCwgNTAwMCwgYnk9ZHQpCgppbml0aWFsLmNvbmRpdGlvbnMgPC0gYyhTMSA9IHAqKE4tMSksIFMyID0gKDEtcCkqKE4tMSksIEExPTAsIEEyPTAsIElzPTEsIAogICAgICAgICAgICAgICAgICAgICAgIFI9MCkKCgojIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcG90aW9uIHJ1bnMgdGhlIHNpbXVsYXRpb24gdGhhdCBjb21wdXRlcyB0aGUgZGlmZmVyZW50aWFsIGVxdWF0aW9uLiBXZSB1c2UgYW4gIm9kZSIgb3Igb3JkaW5hcnkgZGlmZmVyZW50aWFsIGVxdWF0aW9uIHNvbHZlciB0byBzb2x2ZSB0aGlzIHN5c3RlbS4gSW4gdGhpcyBjYXNlLCB3ZSBhcmUgY3JlYXRpbmcgdGhyZWUgZGlmZmVyZW50IHNpbXVsYXRpb25zIHNvIHRoYXQgd2UgY2FuIHZhcnkgdGhlIG1vZGVsIHBhcmFtZXRlcnMgaW4gZWFjaCBzaW11bGF0aW9uLiAgCgpzaW11bGF0aW9uMSA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczEsIHRpbWVzPXRpbWVzdGVwcykpIAoKc2ltdWxhdGlvbjIgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMyLCB0aW1lcz10aW1lc3RlcHMpKQoKc2ltdWxhdGlvbjMgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMzLCB0aW1lcz10aW1lc3RlcHMpKQoKIyMjIyMjIyMjIyMjIyMjIyBWaXN1YWxpemF0aW9uIC0gVGhpcyBwb3J0aW9uIGNyZWF0ZXMgdGhlIGdyYXBocyBmcm9tIHRoZSBkYXRhIHRoYXQgd2UganVzdCBjcmVhdGVkLgpwbG90UyA8LSBnZ3Bsb3QoKSArCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnYjIgPSAwLjAwOScpKSArICAgIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2IyID0gMC4wMDA5JykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnYjIgPSAwLjAwMDA5JykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIlN1Y2NlcHRpYmxlIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdEk8LSBnZ3Bsb3QoKSArCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdiMiA9IDAuMDA5JykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdiMiA9IDAuMDAwOScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnYjIgPSAwLjAwMDA5JykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIkluZmVjdGVkIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKCnBsb3RSIDwtIGdncGxvdCgpICsKICAgIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnYjIgPSAwLjAwOScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnYjIgPSAwLjAwMDknKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2IyID0gMC4wMDAwOScpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJSZWNvdmVyZWQgUG9wdWxhdGlvbiIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCiMjIyMjIyMjIyMjIyMjIFBsb3QgLSBUaGlzIGlzIHRoZSBwb3J0aW9uIHRoYXQgb3V0cHV0cyB0aGUgcGxvdC4gCgpwbG90UwpwbG90SSAKcGxvdFIKYGBgCgojIyMjIGExCgpgYGB7ciwgaW5jbHVkZT1UUlVFfQoKIyMjIyMjIyMjIyMjIyMjIyBTSVIgbW9kZWwgLSBUaGlzIHBvcnRpb24gc2V0cyB1cCB0aGUgZXF1YXRpb25zIHRoYXQgbWFrZSB1cCB0aGUgbW9kZWwuIAptb2RlbC5zeXN0ZW0gPC0gZnVuY3Rpb24odGltZSxzdGF0ZSxwYXJhbWV0ZXJzKXsKICB3aXRoKGFzLmxpc3QoYyhzdGF0ZSxwYXJhbWV0ZXJzKSksewogICAgTiA9IFMxK1MyK0ExK0EyK0lzK1IKICAgIEkgPSBBMStBMitJcwogICAgQSA9IEExK0EyCiAgICBzMSA9IFMxL04KICAgIHMyID0gUzIvTgogICAgZFMxID0gYTIqczIgLSAoYTEgKyBiMSpJKSpzMQogICAgZFMyID0gYTEqczEgLSAoYTIgKyBiMipJKSpzMgogICAgZEExID0gKDEtbCkqYjEqczEqSSArIGEyKkEyIC0gKGExK2craykqQTEKICAgIGRBMiA9ICgxLWwpKmIyKnMyKkkgKyBhMSpBMSAtIChhMitnK2spKkEyCiAgICBkSXMgPSBsKihiMSpzMSArIGIyKnMyKSpJICsgZypBIC0gaypJcwogICAgZFIgPSBrKkkKICAgIHJldHVybihsaXN0KGMoZFMxLGRTMixkQTEsZEEyLGRJcyxkUikpKQogIH0KICApCn0KCm1vZGVsLnBhcmFtZXRlcnMxIDwtIGMoYjIgPSAwLjAwOSwgYjEgPSAwLjAxMiwgYTE9MC4wMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCm1vZGVsLnBhcmFtZXRlcnMyIDwtIGMoYjIgPSAwLjAwOSwgYjEgPSAwLjAxMiwgYTE9MC4wMDEsIGEyPTAuMDIzLCAKICAgICAgICAgICAgICAgICAgICAgIGw9IDAuNjUsIGcgPSAwLjAwNSwgayA9IDAuMDAwOSkKbW9kZWwucGFyYW1ldGVyczMgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCgojIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBhcnQgc2V0cyB1cCB0aGUgZGV0YWlscyBvZiB0aGUgc2ltdWxhdGlvbi4gSXQgc2V0cyB1cCB0aGUgdGltZXN0ZXBzLCBsZW5ndGggb2YgdGhlIHNpbXVsYXRpb24sIHRoZSBpbml0aWFsIGNvbmRpdGlvbnMsIGFuZCBwYXJhbWV0ZXJzLgpkdCA8LSAwLjEgICMgdGltZXN0ZXAKcCAgPC0gMC43NQpOICA8LSAxMDAKdGltZXN0ZXBzIDwtIHNlcSgwLCA1MDAwLCBieT1kdCkKCmluaXRpYWwuY29uZGl0aW9ucyA8LSBjKFMxID0gcCooTi0xKSwgUzIgPSAoMS1wKSooTi0xKSwgQTE9MCwgQTI9MCwgSXM9MSwgCiAgICAgICAgICAgICAgICAgICAgICAgUj0wKQoKCiMjIyMjIyMjIyMjIyMjIyBTaW11bGF0aW9uIC0gVGhpcyBwb3Rpb24gcnVucyB0aGUgc2ltdWxhdGlvbiB0aGF0IGNvbXB1dGVzIHRoZSBkaWZmZXJlbnRpYWwgZXF1YXRpb24uIFdlIHVzZSBhbiAib2RlIiBvciBvcmRpbmFyeSBkaWZmZXJlbnRpYWwgZXF1YXRpb24gc29sdmVyIHRvIHNvbHZlIHRoaXMgc3lzdGVtLiBJbiB0aGlzIGNhc2UsIHdlIGFyZSBjcmVhdGluZyB0aHJlZSBkaWZmZXJlbnQgc2ltdWxhdGlvbnMgc28gdGhhdCB3ZSBjYW4gdmFyeSB0aGUgbW9kZWwgcGFyYW1ldGVycyBpbiBlYWNoIHNpbXVsYXRpb24uICAKCnNpbXVsYXRpb24xIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMSwgdGltZXM9dGltZXN0ZXBzKSkgCgpzaW11bGF0aW9uMiA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczIsIHRpbWVzPXRpbWVzdGVwcykpCgpzaW11bGF0aW9uMyA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczMsIHRpbWVzPXRpbWVzdGVwcykpCgojIyMjIyMjIyMjIyMjIyMjIFZpc3VhbGl6YXRpb24gLSBUaGlzIHBvcnRpb24gY3JlYXRlcyB0aGUgZ3JhcGhzIGZyb20gdGhlIGRhdGEgdGhhdCB3ZSBqdXN0IGNyZWF0ZWQuCnBsb3RTIDwtIGdncGxvdCgpICsKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdhMT0wLjAwMDEnKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdhMT0wLjAwMScpKSArICAgIAogIGdlb21fbGluZShzaW11bGF0aW9uMyxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2ExPTAuMDEnKSkrIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJTdWNjZXB0aWJsZSBQb3B1bGF0aW9ucyIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCnBsb3RJPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnYTE9MC4wMDAxJykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdhMT0wLjAwMScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnYTE9MC4wMScpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJJbmZlY3RlZCBQb3B1bGF0aW9ucyIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCgpwbG90UiA8LSBnZ3Bsb3QoKSArCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2ExPTAuMDAwMScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnYTE9MC4wMDEnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2ExPTAuMDEnKSkgKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiUmVjb3ZlcmVkIFBvcHVsYXRpb24iKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgojIyMjIyMjIyMjIyMjIyBQbG90IC0gVGhpcyBpcyB0aGUgcG9ydGlvbiB0aGF0IG91dHB1dHMgdGhlIHBsb3QuIAoKcGxvdFMKcGxvdEkgCnBsb3RSCmBgYAoKIyMjIyBhMgoKYGBge3IsIGluY2x1ZGU9VFJVRX0KCiMjIyMjIyMjIyMjIyMjIyMgU0lSIG1vZGVsIC0gVGhpcyBwb3J0aW9uIHNldHMgdXAgdGhlIGVxdWF0aW9ucyB0aGF0IG1ha2UgdXAgdGhlIG1vZGVsLiAKbW9kZWwuc3lzdGVtIDwtIGZ1bmN0aW9uKHRpbWUsc3RhdGUscGFyYW1ldGVycyl7CiAgd2l0aChhcy5saXN0KGMoc3RhdGUscGFyYW1ldGVycykpLHsKICAgIE4gPSBTMStTMitBMStBMitJcytSCiAgICBJID0gQTErQTIrSXMKICAgIEEgPSBBMStBMgogICAgczEgPSBTMS9OCiAgICBzMiA9IFMyL04KICAgIGRTMSA9IGEyKnMyIC0gKGExICsgYjEqSSkqczEKICAgIGRTMiA9IGExKnMxIC0gKGEyICsgYjIqSSkqczIKICAgIGRBMSA9ICgxLWwpKmIxKnMxKkkgKyBhMipBMiAtIChhMStnK2spKkExCiAgICBkQTIgPSAoMS1sKSpiMipzMipJICsgYTEqQTEgLSAoYTIrZytrKSpBMgogICAgZElzID0gbCooYjEqczEgKyBiMipzMikqSSArIGcqQSAtIGsqSXMKICAgIGRSID0gaypJCiAgICByZXR1cm4obGlzdChjKGRTMSxkUzIsZEExLGRBMixkSXMsZFIpKSkKICB9CiAgKQp9Cgptb2RlbC5wYXJhbWV0ZXJzMSA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAwMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQptb2RlbC5wYXJhbWV0ZXJzMiA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwMDkpCm1vZGVsLnBhcmFtZXRlcnMzIDwtIGMoYjIgPSAwLjAwOSwgYjEgPSAwLjAxMiwgYTE9MC4wMDEsIGEyPTAuMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQoKIyMjIyMjIyMjIyMjIyMjIyBTaW11bGF0aW9uIC0gVGhpcyBwYXJ0IHNldHMgdXAgdGhlIGRldGFpbHMgb2YgdGhlIHNpbXVsYXRpb24uIEl0IHNldHMgdXAgdGhlIHRpbWVzdGVwcywgbGVuZ3RoIG9mIHRoZSBzaW11bGF0aW9uLCB0aGUgaW5pdGlhbCBjb25kaXRpb25zLCBhbmQgcGFyYW1ldGVycy4KZHQgPC0gMC4xICAjIHRpbWVzdGVwCnAgIDwtIDAuNzUKTiAgPC0gMTAwCnRpbWVzdGVwcyA8LSBzZXEoMCwgNTAwMCwgYnk9ZHQpCgppbml0aWFsLmNvbmRpdGlvbnMgPC0gYyhTMSA9IHAqKE4tMSksIFMyID0gKDEtcCkqKE4tMSksIEExPTAsIEEyPTAsIElzPTEsIAogICAgICAgICAgICAgICAgICAgICAgIFI9MCkKCgojIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcG90aW9uIHJ1bnMgdGhlIHNpbXVsYXRpb24gdGhhdCBjb21wdXRlcyB0aGUgZGlmZmVyZW50aWFsIGVxdWF0aW9uLiBXZSB1c2UgYW4gIm9kZSIgb3Igb3JkaW5hcnkgZGlmZmVyZW50aWFsIGVxdWF0aW9uIHNvbHZlciB0byBzb2x2ZSB0aGlzIHN5c3RlbS4gSW4gdGhpcyBjYXNlLCB3ZSBhcmUgY3JlYXRpbmcgdGhyZWUgZGlmZmVyZW50IHNpbXVsYXRpb25zIHNvIHRoYXQgd2UgY2FuIHZhcnkgdGhlIG1vZGVsIHBhcmFtZXRlcnMgaW4gZWFjaCBzaW11bGF0aW9uLiAgCgpzaW11bGF0aW9uMSA8LSBhcy5kYXRhLmZyYW1lKG9kZSh5PWluaXRpYWwuY29uZGl0aW9ucywgZnVuYyA9IG1vZGVsLnN5c3RlbSwgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcGFybXM9bW9kZWwucGFyYW1ldGVyczEsIHRpbWVzPXRpbWVzdGVwcykpIAoKc2ltdWxhdGlvbjIgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMyLCB0aW1lcz10aW1lc3RlcHMpKQoKc2ltdWxhdGlvbjMgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMzLCB0aW1lcz10aW1lc3RlcHMpKQoKIyMjIyMjIyMjIyMjIyMjIyBWaXN1YWxpemF0aW9uIC0gVGhpcyBwb3J0aW9uIGNyZWF0ZXMgdGhlIGdyYXBocyBmcm9tIHRoZSBkYXRhIHRoYXQgd2UganVzdCBjcmVhdGVkLgpwbG90UyA8LSBnZ3Bsb3QoKSArCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnYTI9MC4wMDIzJykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24yLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnYTI9MC4wMjMnKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdhMj0wLjIzJykpKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiU3VjY2VwdGlibGUgUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgpwbG90STwtIGdncGxvdCgpICsKICAgIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9SXMrQTErQTIsIGNvbG9yID0gJ2EyPTAuMDAyMycpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24yLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnYTI9MC4wMjMnKSkgKyAKICAgIGdlb21fbGluZShzaW11bGF0aW9uMyxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9SXMrQTErQTIsIGNvbG9yID0gJ2EyPTAuMjMnKSkgKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiSW5mZWN0ZWQgUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgoKcGxvdFIgPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdhMj0wLjAwMjMnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2EyPTAuMDIzJykpICsgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdhMj0wLjIzJykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIlJlY292ZXJlZCBQb3B1bGF0aW9uIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKIyMjIyMjIyMjIyMjIyMgUGxvdCAtIFRoaXMgaXMgdGhlIHBvcnRpb24gdGhhdCBvdXRwdXRzIHRoZSBwbG90LiAKCnBsb3RTCnBsb3RJIApwbG90UgpgYGAKCiMjIyMgbAoKYGBge3IsIGluY2x1ZGU9VFJVRX0KCiMjIyMjIyMjIyMjIyMjIyMgU0lSIG1vZGVsIC0gVGhpcyBwb3J0aW9uIHNldHMgdXAgdGhlIGVxdWF0aW9ucyB0aGF0IG1ha2UgdXAgdGhlIG1vZGVsLiAKbW9kZWwuc3lzdGVtIDwtIGZ1bmN0aW9uKHRpbWUsc3RhdGUscGFyYW1ldGVycyl7CiAgd2l0aChhcy5saXN0KGMoc3RhdGUscGFyYW1ldGVycykpLHsKICAgIE4gPSBTMStTMitBMStBMitJcytSCiAgICBJID0gQTErQTIrSXMKICAgIEEgPSBBMStBMgogICAgczEgPSBTMS9OCiAgICBzMiA9IFMyL04KICAgIGRTMSA9IGEyKnMyIC0gKGExICsgYjEqSSkqczEKICAgIGRTMiA9IGExKnMxIC0gKGEyICsgYjIqSSkqczIKICAgIGRBMSA9ICgxLWwpKmIxKnMxKkkgKyBhMipBMiAtIChhMStnK2spKkExCiAgICBkQTIgPSAoMS1sKSpiMipzMipJICsgYTEqQTEgLSAoYTIrZytrKSpBMgogICAgZElzID0gbCooYjEqczEgKyBiMipzMikqSSArIGcqQSAtIGsqSXMKICAgIGRSID0gaypJCiAgICByZXR1cm4obGlzdChjKGRTMSxkUzIsZEExLGRBMixkSXMsZFIpKSkKICB9CiAgKQp9Cgptb2RlbC5wYXJhbWV0ZXJzMSA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjUsIGcgPSAwLjAwNSwgayA9IDAuMDAwOSkKbW9kZWwucGFyYW1ldGVyczIgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQptb2RlbC5wYXJhbWV0ZXJzMyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjgsIGcgPSAwLjAwNSwgayA9IDAuMDAwOSkKCiMjIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcGFydCBzZXRzIHVwIHRoZSBkZXRhaWxzIG9mIHRoZSBzaW11bGF0aW9uLiBJdCBzZXRzIHVwIHRoZSB0aW1lc3RlcHMsIGxlbmd0aCBvZiB0aGUgc2ltdWxhdGlvbiwgdGhlIGluaXRpYWwgY29uZGl0aW9ucywgYW5kIHBhcmFtZXRlcnMuCmR0IDwtIDAuMSAgIyB0aW1lc3RlcApwICA8LSAwLjc1Ck4gIDwtIDEwMAp0aW1lc3RlcHMgPC0gc2VxKDAsIDUwMDAsIGJ5PWR0KQoKaW5pdGlhbC5jb25kaXRpb25zIDwtIGMoUzEgPSBwKihOLTEpLCBTMiA9ICgxLXApKihOLTEpLCBBMT0wLCBBMj0wLCBJcz0xLCAKICAgICAgICAgICAgICAgICAgICAgICBSPTApCgoKIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBvdGlvbiBydW5zIHRoZSBzaW11bGF0aW9uIHRoYXQgY29tcHV0ZXMgdGhlIGRpZmZlcmVudGlhbCBlcXVhdGlvbi4gV2UgdXNlIGFuICJvZGUiIG9yIG9yZGluYXJ5IGRpZmZlcmVudGlhbCBlcXVhdGlvbiBzb2x2ZXIgdG8gc29sdmUgdGhpcyBzeXN0ZW0uIEluIHRoaXMgY2FzZSwgd2UgYXJlIGNyZWF0aW5nIHRocmVlIGRpZmZlcmVudCBzaW11bGF0aW9ucyBzbyB0aGF0IHdlIGNhbiB2YXJ5IHRoZSBtb2RlbCBwYXJhbWV0ZXJzIGluIGVhY2ggc2ltdWxhdGlvbi4gIAoKc2ltdWxhdGlvbjEgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMxLCB0aW1lcz10aW1lc3RlcHMpKSAKCnNpbXVsYXRpb24yIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMiwgdGltZXM9dGltZXN0ZXBzKSkKCnNpbXVsYXRpb24zIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMywgdGltZXM9dGltZXN0ZXBzKSkKCiMjIyMjIyMjIyMjIyMjIyMgVmlzdWFsaXphdGlvbiAtIFRoaXMgcG9ydGlvbiBjcmVhdGVzIHRoZSBncmFwaHMgZnJvbSB0aGUgZGF0YSB0aGF0IHdlIGp1c3QgY3JlYXRlZC4KcGxvdFMgPC0gZ2dwbG90KCkgKwogIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2w9IDAuNScpKSArICAgIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2w9IDAuNjUnKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdsPSAwLjgnKSkrIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJTdWNjZXB0aWJsZSBQb3B1bGF0aW9ucyIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCnBsb3RJPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnbD0gMC41JykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdsPSAwLjY1JykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdsPSAwLjgnKSkgKyAKICBsYWJzKHg9IlRpbWUiLCB5PSJQb3B1bGF0aW9uIiwgY29sb3I9J0xlZ2VuZCcpICsKICBzY2FsZV94X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSkgKwogIHNjYWxlX3lfY29udGludW91cyhleHBhbmQ9YygwLDApLCBsaW1pdHM9YygwLCAxLjEqTikpICsgCiAgdGhlbWVfYncoKSArCiAgZ2d0aXRsZSgiSW5mZWN0ZWQgUG9wdWxhdGlvbnMiKSsKICB0aGVtZShwbG90Lm1hcmdpbiA9IG1hcmdpbigxNSwxNSwxNSwxNSkpCgoKcGxvdFIgPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdsPSAwLjUnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2w9IDAuNjUnKSkgKyAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVIsIGNvbG9yID0gJ2w9IDAuOCcpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJSZWNvdmVyZWQgUG9wdWxhdGlvbiIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCiMjIyMjIyMjIyMjIyMjIFBsb3QgLSBUaGlzIGlzIHRoZSBwb3J0aW9uIHRoYXQgb3V0cHV0cyB0aGUgcGxvdC4gCgpwbG90UwpwbG90SSAKcGxvdFIKYGBgCgojIyMjIGcKCmBgYHtyLCBpbmNsdWRlPVRSVUV9CgojIyMjIyMjIyMjIyMjIyMjIFNJUiBtb2RlbCAtIFRoaXMgcG9ydGlvbiBzZXRzIHVwIHRoZSBlcXVhdGlvbnMgdGhhdCBtYWtlIHVwIHRoZSBtb2RlbC4gCm1vZGVsLnN5c3RlbSA8LSBmdW5jdGlvbih0aW1lLHN0YXRlLHBhcmFtZXRlcnMpewogIHdpdGgoYXMubGlzdChjKHN0YXRlLHBhcmFtZXRlcnMpKSx7CiAgICBOID0gUzErUzIrQTErQTIrSXMrUgogICAgSSA9IEExK0EyK0lzCiAgICBBID0gQTErQTIKICAgIHMxID0gUzEvTgogICAgczIgPSBTMi9OCiAgICBkUzEgPSBhMipzMiAtIChhMSArIGIxKkkpKnMxCiAgICBkUzIgPSBhMSpzMSAtIChhMiArIGIyKkkpKnMyCiAgICBkQTEgPSAoMS1sKSpiMSpzMSpJICsgYTIqQTIgLSAoYTErZytrKSpBMQogICAgZEEyID0gKDEtbCkqYjIqczIqSSArIGExKkExIC0gKGEyK2craykqQTIKICAgIGRJcyA9IGwqKGIxKnMxICsgYjIqczIpKkkgKyBnKkEgLSBrKklzCiAgICBkUiA9IGsqSQogICAgcmV0dXJuKGxpc3QoYyhkUzEsZFMyLGRBMSxkQTIsZElzLGRSKSkpCiAgfQogICkKfQoKbW9kZWwucGFyYW1ldGVyczEgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDAwNSwgayA9IDAuMDAwOSkKbW9kZWwucGFyYW1ldGVyczIgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQptb2RlbC5wYXJhbWV0ZXJzMyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wNSwgayA9IDAuMDAwOSkKCiMjIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcGFydCBzZXRzIHVwIHRoZSBkZXRhaWxzIG9mIHRoZSBzaW11bGF0aW9uLiBJdCBzZXRzIHVwIHRoZSB0aW1lc3RlcHMsIGxlbmd0aCBvZiB0aGUgc2ltdWxhdGlvbiwgdGhlIGluaXRpYWwgY29uZGl0aW9ucywgYW5kIHBhcmFtZXRlcnMuCmR0IDwtIDAuMSAgIyB0aW1lc3RlcApwICA8LSAwLjc1Ck4gIDwtIDEwMAp0aW1lc3RlcHMgPC0gc2VxKDAsIDUwMDAsIGJ5PWR0KQoKaW5pdGlhbC5jb25kaXRpb25zIDwtIGMoUzEgPSBwKihOLTEpLCBTMiA9ICgxLXApKihOLTEpLCBBMT0wLCBBMj0wLCBJcz0xLCAKICAgICAgICAgICAgICAgICAgICAgICBSPTApCgoKIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBvdGlvbiBydW5zIHRoZSBzaW11bGF0aW9uIHRoYXQgY29tcHV0ZXMgdGhlIGRpZmZlcmVudGlhbCBlcXVhdGlvbi4gV2UgdXNlIGFuICJvZGUiIG9yIG9yZGluYXJ5IGRpZmZlcmVudGlhbCBlcXVhdGlvbiBzb2x2ZXIgdG8gc29sdmUgdGhpcyBzeXN0ZW0uIEluIHRoaXMgY2FzZSwgd2UgYXJlIGNyZWF0aW5nIHRocmVlIGRpZmZlcmVudCBzaW11bGF0aW9ucyBzbyB0aGF0IHdlIGNhbiB2YXJ5IHRoZSBtb2RlbCBwYXJhbWV0ZXJzIGluIGVhY2ggc2ltdWxhdGlvbi4gIAoKc2ltdWxhdGlvbjEgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMxLCB0aW1lcz10aW1lc3RlcHMpKSAKCnNpbXVsYXRpb24yIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMiwgdGltZXM9dGltZXN0ZXBzKSkKCnNpbXVsYXRpb24zIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMywgdGltZXM9dGltZXN0ZXBzKSkKCiMjIyMjIyMjIyMjIyMjIyMgVmlzdWFsaXphdGlvbiAtIFRoaXMgcG9ydGlvbiBjcmVhdGVzIHRoZSBncmFwaHMgZnJvbSB0aGUgZGF0YSB0aGF0IHdlIGp1c3QgY3JlYXRlZC4KcGxvdFMgPC0gZ2dwbG90KCkgKwogIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2cgPSAwLjAwMDUnKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdnID0gMC4wMDUnKSkgKyAgICAKICBnZW9tX2xpbmUoc2ltdWxhdGlvbjMsbWFwcGluZz1hZXMoeD10aW1lLCB5PVMxK1MyLCBjb2xvciA9ICdnID0gMC4wNScpKSsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIlN1Y2NlcHRpYmxlIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdEk8LSBnZ3Bsb3QoKSArCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdnID0gMC4wMDA1JykpICsgCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjIsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdnID0gMC4wMDUnKSkgKyAKICAgIGdlb21fbGluZShzaW11bGF0aW9uMyxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9SXMrQTErQTIsIGNvbG9yID0gJ2cgPSAwLjA1JykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIkluZmVjdGVkIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKCnBsb3RSIDwtIGdncGxvdCgpICsKICAgIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnZyA9IDAuMDAwNScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnZyA9IDAuMDA1JykpICsgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdnID0gMC4wNScpKSArIAogIGxhYnMoeD0iVGltZSIsIHk9IlBvcHVsYXRpb24iLCBjb2xvcj0nTGVnZW5kJykgKwogIHNjYWxlX3hfY29udGludW91cyhleHBhbmQ9YygwLDApKSArCiAgc2NhbGVfeV9jb250aW51b3VzKGV4cGFuZD1jKDAsMCksIGxpbWl0cz1jKDAsIDEuMSpOKSkgKyAKICB0aGVtZV9idygpICsKICBnZ3RpdGxlKCJSZWNvdmVyZWQgUG9wdWxhdGlvbiIpKwogIHRoZW1lKHBsb3QubWFyZ2luID0gbWFyZ2luKDE1LDE1LDE1LDE1KSkKCiMjIyMjIyMjIyMjIyMjIFBsb3QgLSBUaGlzIGlzIHRoZSBwb3J0aW9uIHRoYXQgb3V0cHV0cyB0aGUgcGxvdC4gCgpwbG90UwpwbG90SSAKcGxvdFIKYGBgCgojIyMjIGsKCmBgYHtyLCBpbmNsdWRlPVRSVUV9CgojIyMjIyMjIyMjIyMjIyMjIFNJUiBtb2RlbCAtIFRoaXMgcG9ydGlvbiBzZXRzIHVwIHRoZSBlcXVhdGlvbnMgdGhhdCBtYWtlIHVwIHRoZSBtb2RlbC4gCm1vZGVsLnN5c3RlbSA8LSBmdW5jdGlvbih0aW1lLHN0YXRlLHBhcmFtZXRlcnMpewogIHdpdGgoYXMubGlzdChjKHN0YXRlLHBhcmFtZXRlcnMpKSx7CiAgICBOID0gUzErUzIrQTErQTIrSXMrUgogICAgSSA9IEExK0EyK0lzCiAgICBBID0gQTErQTIKICAgIHMxID0gUzEvTgogICAgczIgPSBTMi9OCiAgICBkUzEgPSBhMipzMiAtIChhMSArIGIxKkkpKnMxCiAgICBkUzIgPSBhMSpzMSAtIChhMiArIGIyKkkpKnMyCiAgICBkQTEgPSAoMS1sKSpiMSpzMSpJICsgYTIqQTIgLSAoYTErZytrKSpBMQogICAgZEEyID0gKDEtbCkqYjIqczIqSSArIGExKkExIC0gKGEyK2craykqQTIKICAgIGRJcyA9IGwqKGIxKnMxICsgYjIqczIpKkkgKyBnKkEgLSBrKklzCiAgICBkUiA9IGsqSQogICAgcmV0dXJuKGxpc3QoYyhkUzEsZFMyLGRBMSxkQTIsZElzLGRSKSkpCiAgfQogICkKfQoKbW9kZWwucGFyYW1ldGVyczEgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDAwOSkKbW9kZWwucGFyYW1ldGVyczIgPC0gYyhiMiA9IDAuMDA5LCBiMSA9IDAuMDEyLCBhMT0wLjAwMSwgYTI9MC4wMjMsIAogICAgICAgICAgICAgICAgICAgICAgbD0gMC42NSwgZyA9IDAuMDA1LCBrID0gMC4wMDA5KQptb2RlbC5wYXJhbWV0ZXJzMyA8LSBjKGIyID0gMC4wMDksIGIxID0gMC4wMTIsIGExPTAuMDAxLCBhMj0wLjAyMywgCiAgICAgICAgICAgICAgICAgICAgICBsPSAwLjY1LCBnID0gMC4wMDUsIGsgPSAwLjAwOSkKCiMjIyMjIyMjIyMjIyMjIyMgU2ltdWxhdGlvbiAtIFRoaXMgcGFydCBzZXRzIHVwIHRoZSBkZXRhaWxzIG9mIHRoZSBzaW11bGF0aW9uLiBJdCBzZXRzIHVwIHRoZSB0aW1lc3RlcHMsIGxlbmd0aCBvZiB0aGUgc2ltdWxhdGlvbiwgdGhlIGluaXRpYWwgY29uZGl0aW9ucywgYW5kIHBhcmFtZXRlcnMuCmR0IDwtIDAuMSAgIyB0aW1lc3RlcApwICA8LSAwLjc1Ck4gIDwtIDEwMAp0aW1lc3RlcHMgPC0gc2VxKDAsIDUwMDAsIGJ5PWR0KQoKaW5pdGlhbC5jb25kaXRpb25zIDwtIGMoUzEgPSBwKihOLTEpLCBTMiA9ICgxLXApKihOLTEpLCBBMT0wLCBBMj0wLCBJcz0xLCAKICAgICAgICAgICAgICAgICAgICAgICBSPTApCgoKIyMjIyMjIyMjIyMjIyMjIFNpbXVsYXRpb24gLSBUaGlzIHBvdGlvbiBydW5zIHRoZSBzaW11bGF0aW9uIHRoYXQgY29tcHV0ZXMgdGhlIGRpZmZlcmVudGlhbCBlcXVhdGlvbi4gV2UgdXNlIGFuICJvZGUiIG9yIG9yZGluYXJ5IGRpZmZlcmVudGlhbCBlcXVhdGlvbiBzb2x2ZXIgdG8gc29sdmUgdGhpcyBzeXN0ZW0uIEluIHRoaXMgY2FzZSwgd2UgYXJlIGNyZWF0aW5nIHRocmVlIGRpZmZlcmVudCBzaW11bGF0aW9ucyBzbyB0aGF0IHdlIGNhbiB2YXJ5IHRoZSBtb2RlbCBwYXJhbWV0ZXJzIGluIGVhY2ggc2ltdWxhdGlvbi4gIAoKc2ltdWxhdGlvbjEgPC0gYXMuZGF0YS5mcmFtZShvZGUoeT1pbml0aWFsLmNvbmRpdGlvbnMsIGZ1bmMgPSBtb2RlbC5zeXN0ZW0sIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcm1zPW1vZGVsLnBhcmFtZXRlcnMxLCB0aW1lcz10aW1lc3RlcHMpKSAKCnNpbXVsYXRpb24yIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMiwgdGltZXM9dGltZXN0ZXBzKSkKCnNpbXVsYXRpb24zIDwtIGFzLmRhdGEuZnJhbWUob2RlKHk9aW5pdGlhbC5jb25kaXRpb25zLCBmdW5jID0gbW9kZWwuc3lzdGVtLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXJtcz1tb2RlbC5wYXJhbWV0ZXJzMywgdGltZXM9dGltZXN0ZXBzKSkKCiMjIyMjIyMjIyMjIyMjIyMgVmlzdWFsaXphdGlvbiAtIFRoaXMgcG9ydGlvbiBjcmVhdGVzIHRoZSBncmFwaHMgZnJvbSB0aGUgZGF0YSB0aGF0IHdlIGp1c3QgY3JlYXRlZC4KcGxvdFMgPC0gZ2dwbG90KCkgKwogIGdlb21fbGluZShzaW11bGF0aW9uMSxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2sgPSAwLjAwMDA5JykpICsgICAgCiAgZ2VvbV9saW5lKHNpbXVsYXRpb24yLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1TMStTMiwgY29sb3IgPSAnayA9IDAuMDAwOScpKSArICAgIAogIGdlb21fbGluZShzaW11bGF0aW9uMyxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UzErUzIsIGNvbG9yID0gJ2sgPSAwLjAwOScpKSsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIlN1Y2NlcHRpYmxlIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdEk8LSBnZ3Bsb3QoKSArCiAgICBnZW9tX2xpbmUoc2ltdWxhdGlvbjEsbWFwcGluZz1hZXMoeD10aW1lLCB5PUlzK0ExK0EyLCBjb2xvciA9ICdrID0gMC4wMDAwOScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24yLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnayA9IDAuMDAwOScpKSArIAogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24zLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1JcytBMStBMiwgY29sb3IgPSAnayA9IDAuMDA5JykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIkluZmVjdGVkIFBvcHVsYXRpb25zIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKcGxvdFIgPC0gZ2dwbG90KCkgKwogICAgZ2VvbV9saW5lKHNpbXVsYXRpb24xLG1hcHBpbmc9YWVzKHg9dGltZSwgeT1SLCBjb2xvciA9ICdrID0gMC4wMDAwOScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMixtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnayA9IDAuMDAwOScpKSArIAogIGdlb21fbGluZShzaW11bGF0aW9uMyxtYXBwaW5nPWFlcyh4PXRpbWUsIHk9UiwgY29sb3IgPSAnayA9IDAuMDA5JykpICsgCiAgbGFicyh4PSJUaW1lIiwgeT0iUG9wdWxhdGlvbiIsIGNvbG9yPSdMZWdlbmQnKSArCiAgc2NhbGVfeF9jb250aW51b3VzKGV4cGFuZD1jKDAsMCkpICsKICBzY2FsZV95X2NvbnRpbnVvdXMoZXhwYW5kPWMoMCwwKSwgbGltaXRzPWMoMCwgMS4xKk4pKSArIAogIHRoZW1lX2J3KCkgKwogIGdndGl0bGUoIlJlY292ZXJlZCBQb3B1bGF0aW9uIikrCiAgdGhlbWUocGxvdC5tYXJnaW4gPSBtYXJnaW4oMTUsMTUsMTUsMTUpKQoKIyMjIyMjIyMjIyMjIyMgUGxvdCAtIFRoaXMgaXMgdGhlIHBvcnRpb24gdGhhdCBvdXRwdXRzIHRoZSBwbG90LiAKCnBsb3RTCnBsb3RJIApwbG90UgpgYGAKCgojIyMgT3ZlcmFsbCBFdmFsdWF0aW9uCgpUaGlzIHJlc3VsdCBtYWtlcyBzZW5zZSBsb2dpY2FsbHkuIFRoZSBvbmx5IHRpbWUgdGhhdCB0aGUgbW9kZWwgYXBwcm9hY2hlcyBlcXVpbGlicml1bSBpcyB3aGVuIHRoZXJlIGlzIG5vIGRpc2Vhc2UgcHJlc2VudCBpbiB0aGUgcG9wdWxhdGlvbi4gQWRkaXRpb25hbGx5LCBvdmVyIGEgc3VmZmljaWVudCBwZXJpb2Qgb2YgdGltZSwgYWxsIHNldHMgb2YgaW5pdGlhbCBjb25kaXRpb25zIHByb2NlZWQgdG8gYSBkaXNlYXNlIGZyZWUgZXF1aWxpYnJpdW0uIFRoaXMgbWFrZXMgc2Vuc2UgYmVjYXVzZSBvbmNlIGEgcGVyc29uIGlzIHJlY292ZXJlZCwgdGhlcmUgaXMgbm8gd2F5IGZvciB0aGVtIHRvIGJlY29tZSBzdXNjZXB0aWJsZSBhZ2Fpbi4gCgpUaGlzIGRpc2Vhc2UgZ2l2ZXMgdXMga25vd2xlZGdlIGFib3V0IHRoZSBzaG9ydCB0ZXJtIGJlaGF2aW9yIG9mIGEgZGlzZWFzZSByZWxhdGVkIHRvIHNvY2lvbG9naWNhbCBwYXJhbWV0ZXJzLCBob3dldmVyIHRoZSBsb25nIHRlcm0gYmVoYXZpb3IgdGhlIGRpc2Vhc2UgaXMgdW5rbm93biBiZWNhdXNlIGEgbGFjayBvZiByZWluZmVjdGlvbiBpcyB1bmxpa2VseSBpbiB0aGUgcmVhbCB3b3JsZC4gSW4gb3JkZXIgdG8gaW1wcm92ZSB0aGlzIG1vZGVsIGluIGxvbmdlciB0ZXJtIGRpc2Vhc2UgcHJlZGljdGlvbiwgYSByZWluZmVjdGlvbiBwb3J0aW9uIGNhbiBiZSBhZGRlZC4gVGhpcyB3b3VsZCBtYWtlIHRoZSB0aGVvcmV0aWNhbCBkaXNlYXNlIHdlIGFyZSByZXByZXNlbnRpbmcgY2xvc2VyIHRvIHRoZSBmbHUgb3IgQ09WSUQtMTkuIElOIHRoZSBuZXh0IHNlY3Rpb24gd2Ugd2lsbCBleHBsb3JlIGltcHJvdmVtZW50cyB0byB0aGlzIG1vZGVsLg==</div>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeSourceEmbed("basicmodel.Rmd");
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
